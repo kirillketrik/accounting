@@ -5,7 +5,6 @@ class AppSettingsRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    default_responsible_person: str | None
     default_asset_type_id: int | None
     default_bulk_asset_template: str | None
     default_bulk_asset_separator: str | None
@@ -15,7 +14,6 @@ class AppSettingsRead(BaseModel):
 
 
 class AppSettingsUpdate(BaseModel):
-    default_responsible_person: str | None = Field(default=None, max_length=200)
     default_asset_type_id: int | None = None
     default_bulk_asset_template: str | None = Field(default=None, max_length=300)
     default_bulk_asset_separator: str | None = Field(default=None, max_length=10)

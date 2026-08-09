@@ -55,7 +55,7 @@ export function EventTypesSection() {
     const payload = {
       name: values.name,
       description: values.description || null,
-      target_status: values.target_status,
+      target_status_id: values.target_status_id,
       counter_label: values.counter_label || null,
     }
     if (editingEventType) {

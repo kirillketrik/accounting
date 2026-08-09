@@ -71,7 +71,7 @@ export function AssetHistoryDetailPage() {
           <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             <InfoRow label="Инвентарный номер" value={item.inventory_number ?? '—'} />
             <InfoRow label="Серийный номер" value={item.serial_number ?? '—'} />
-            <InfoRow label="Местоположение" value={item.location ?? '—'} />
+            <InfoRow label="Место" value={item.place_name ?? '—'} />
             <InfoRow label="Ответственное лицо" value={item.responsible_person ?? '—'} />
             <InfoRow
               label="Создан"

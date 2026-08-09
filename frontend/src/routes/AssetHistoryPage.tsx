@@ -61,7 +61,7 @@ export function AssetHistoryPage() {
                   <TableHead>Инв. номер</TableHead>
                   <TableHead>Серийный номер</TableHead>
                   <TableHead>Списан</TableHead>
-                  <TableHead>Местоположение</TableHead>
+                  <TableHead>Место</TableHead>
                   <TableHead>Ответственное лицо</TableHead>
                 </TableRow>
               </TableHeader>
@@ -77,7 +77,7 @@ export function AssetHistoryPage() {
                     <TableCell>{item.inventory_number ?? '—'}</TableCell>
                     <TableCell>{item.serial_number ?? '—'}</TableCell>
                     <TableCell>{new Date(item.disposed_at).toLocaleString()}</TableCell>
-                    <TableCell>{item.location ?? '—'}</TableCell>
+                    <TableCell>{item.place_name ?? '—'}</TableCell>
                     <TableCell>{item.responsible_person ?? '—'}</TableCell>
                   </TableRow>
                 ))}

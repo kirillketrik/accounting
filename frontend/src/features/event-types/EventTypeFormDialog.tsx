@@ -29,7 +29,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-import { ASSET_STATUSES, ASSET_STATUS_LABELS, type EventType } from '@/api/types'
+import type { EventType } from '@/api/types'
+import { useAssetStatuses } from '@/features/asset-statuses/hooks'
 import {
   eventTypeFormSchema,
   type EventTypeFormValues,
@@ -38,7 +39,7 @@ import {
 const EMPTY_VALUES: EventTypeFormValues = {
   name: '',
   description: '',
-  target_status: 'in_storage',
+  target_status_id: 0,
   counter_label: '',
 }
 
@@ -46,7 +47,7 @@ function eventTypeToFormValues(eventType: EventType): EventTypeFormValues {
   return {
     name: eventType.name,
     description: eventType.description ?? '',
-    target_status: eventType.target_status,
+    target_status_id: eventType.target_status_id,
     counter_label: eventType.counter_label ?? '',
   }
 }
@@ -67,6 +68,7 @@ export function EventTypeFormDialog({
   onSubmit,
 }: EventTypeFormDialogProps) {
   const isEdit = !!eventType
+  const { data: assetStatuses } = useAssetStatuses()
 
   const form = useForm<EventTypeFormValues>({
     resolver: zodResolver(eventTypeFormSchema),
@@ -115,14 +117,16 @@ export function EventTypeFormDialog({
 
             <FormField
               control={form.control}
-              name="target_status"
+              name="target_status_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Статус актива после события</FormLabel>
                   <Select
-                    items={ASSET_STATUS_LABELS}
-                    value={field.value}
-                    onValueChange={field.onChange}
+                    items={Object.fromEntries(
+                      (assetStatuses ?? []).map((status) => [String(status.id), status.name])
+                    )}
+                    value={field.value ? String(field.value) : ''}
+                    onValueChange={(value) => field.onChange(Number(value))}
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
@@ -130,9 +134,9 @@ export function EventTypeFormDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {ASSET_STATUSES.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {ASSET_STATUS_LABELS[status]}
+                      {assetStatuses?.map((status) => (
+                        <SelectItem key={status.id} value={String(status.id)}>
+                          {status.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

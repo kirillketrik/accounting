@@ -3,13 +3,13 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.event_type import EventTypeRead
+from app.schemas.user import UserSummary
 
 
 class AssetEventBase(BaseModel):
     event_type_id: int
     event_date: datetime
     description: str | None = None
-    performed_by: str | None = Field(default=None, max_length=200)
 
 
 class AssetEventCreate(AssetEventBase):
@@ -20,7 +20,6 @@ class AssetEventUpdate(BaseModel):
     event_type_id: int | None = None
     event_date: datetime | None = None
     description: str | None = None
-    performed_by: str | None = Field(default=None, max_length=200)
 
 
 class AssetEventRead(AssetEventBase):
@@ -28,6 +27,7 @@ class AssetEventRead(AssetEventBase):
 
     id: int
     asset_id: int
+    performed_by_user: UserSummary | None
     created_at: datetime
 
 
@@ -39,7 +39,6 @@ class AssetEventBulkCreate(BaseModel):
     event_type_id: int
     event_date: datetime
     description: str | None = None
-    performed_by: str | None = Field(default=None, max_length=200)
     inventory_numbers: list[str] = Field(min_length=1)
 
 

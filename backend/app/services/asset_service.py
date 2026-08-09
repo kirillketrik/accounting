@@ -5,12 +5,16 @@ import re
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import ConflictError, NotFoundError
-from app.models.asset import Asset, AssetStatus
+from app.models.asset import Asset
 from app.models.asset_type import AssetType
+from app.models.place import Place
+from app.models.user import User
 from app.repositories.asset import AssetRepository
 from app.repositories.asset_event import AssetEventRepository
 from app.repositories.asset_naming_rule import AssetNamingRuleRepository
+from app.repositories.asset_status import AssetStatusRepository
 from app.repositories.asset_type import AssetTypeRepository
+from app.repositories.place import PlaceRepository
 from app.schemas.asset import (
     AssetBulkCreate,
     AssetBulkDeleteError,
@@ -28,9 +32,9 @@ ASSET_AUDIT_FIELDS = [
     "asset_type_id",
     "inventory_number",
     "serial_number",
-    "status",
-    "location",
-    "responsible_person",
+    "status_id",
+    "place_id",
+    "responsible_user_id",
     "notes",
 ]
 
@@ -43,6 +47,8 @@ class AssetService:
     def __init__(self, db: Session) -> None:
         self.repo = AssetRepository(db)
         self.asset_type_repo = AssetTypeRepository(db)
+        self.status_repo = AssetStatusRepository(db)
+        self.place_repo = PlaceRepository(db)
         self.event_repo = AssetEventRepository(db)
         self.naming_rule_repo = AssetNamingRuleRepository(db)
         self.audit = AuditLogService(db)
@@ -51,7 +57,7 @@ class AssetService:
         self,
         *,
         search: str | None = None,
-        status: AssetStatus | None = None,
+        status_id: int | None = None,
         asset_type_id: int | None = None,
         sort_by: str = "created_at",
         sort_dir: str = "desc",
@@ -60,7 +66,7 @@ class AssetService:
     ) -> tuple[list[Asset], int]:
         return self.repo.search(
             search=search,
-            status=status,
+            status_id=status_id,
             asset_type_id=asset_type_id,
             sort_by=sort_by,
             sort_dir=sort_dir,
@@ -69,9 +75,9 @@ class AssetService:
         )
 
     def list_for_export(
-        self, *, status: AssetStatus | None = None, asset_type_id: int | None = None
+        self, *, status_id: int | None = None, asset_type_id: int | None = None
     ) -> list[Asset]:
-        return self.repo.list_for_export(status=status, asset_type_id=asset_type_id)
+        return self.repo.list_for_export(status_id=status_id, asset_type_id=asset_type_id)
 
     def get(self, id_: int) -> Asset:
         obj = self.repo.get_with_type(id_)
@@ -84,6 +90,22 @@ class AssetService:
         if asset_type is None:
             raise NotFoundError("AssetType", asset_type_id)
         return asset_type
+
+    def _get_status_or_raise(self, status_id: int) -> None:
+        if self.status_repo.get(status_id) is None:
+            raise NotFoundError("AssetStatus", status_id)
+
+    def _get_place_or_raise(self, place_id: int) -> Place:
+        place = self.place_repo.get(place_id)
+        if place is None:
+            raise NotFoundError("Place", place_id)
+        return place
+
+    def _resolve_default_status_id(self) -> int:
+        default_status = self.status_repo.get_default()
+        if default_status is None:
+            raise ConflictError("No default asset status is configured")
+        return default_status.id
 
     def _inventory_number_in_use(self, inventory_number: str, asset_type_id: int) -> Asset | None:
         return self.repo.get_by_inventory_number_and_type(inventory_number, asset_type_id)
@@ -125,14 +147,23 @@ class AssetService:
                 return candidate
             candidate_num += 1
 
-    def create(self, data: AssetCreate) -> Asset:
+    def create(self, data: AssetCreate, current_user: User) -> Asset:
         asset_type = self._get_asset_type_or_raise(data.asset_type_id)
         if data.inventory_number and self._inventory_number_in_use(
             data.inventory_number, data.asset_type_id
         ):
             raise ConflictError(f"Inventory number '{data.inventory_number}' already in use")
+        if data.status_id is not None:
+            self._get_status_or_raise(data.status_id)
+        if data.place_id is not None:
+            self._get_place_or_raise(data.place_id)
         payload = data.model_dump()
+        payload["inventory_number"] = data.inventory_number or self._next_inventory_number(
+            data.asset_type_id, set()
+        )
         payload["name"] = self._default_name(data.name, data.serial_number, asset_type)
+        payload["status_id"] = data.status_id or self._resolve_default_status_id()
+        payload["responsible_user_id"] = current_user.id
         obj = self.repo.create(**payload)
         self.audit.record(
             entity_type="asset",
@@ -143,11 +174,16 @@ class AssetService:
         )
         return self.get(obj.id)
 
-    def update(self, id_: int, data: AssetUpdate) -> Asset:
+    def update(self, id_: int, data: AssetUpdate, current_user: User) -> Asset:
         obj = self.get(id_)
         payload = data.model_dump(exclude_unset=True)
+        payload["responsible_user_id"] = current_user.id
         if "asset_type_id" in payload:
             self._get_asset_type_or_raise(payload["asset_type_id"])
+        if payload.get("status_id") is not None:
+            self._get_status_or_raise(payload["status_id"])
+        if payload.get("place_id") is not None:
+            self._get_place_or_raise(payload["place_id"])
         if payload.get("inventory_number"):
             asset_type_id = payload.get("asset_type_id", obj.asset_type_id)
             existing = self._inventory_number_in_use(payload["inventory_number"], asset_type_id)
@@ -202,8 +238,9 @@ class AssetService:
             deleted_ids.append(id_)
         return AssetBulkDeleteResult(deleted_ids=deleted_ids, errors=errors)
 
-    def bulk_create(self, data: AssetBulkCreate) -> AssetBulkResult:
+    def bulk_create(self, data: AssetBulkCreate, current_user: User) -> AssetBulkResult:
         asset_type = self._get_asset_type_or_raise(data.asset_type_id)
+        default_status_id = self._resolve_default_status_id()
 
         created: list[Asset] = []
         errors: list[AssetBulkError] = []
@@ -227,7 +264,8 @@ class AssetService:
                     name=name,
                     inventory_number=inv,
                     serial_number=item.serial_number,
-                    responsible_person=data.responsible_person,
+                    responsible_user_id=current_user.id,
+                    status_id=default_status_id,
                 )
                 if inv:
                     seen_inventory_numbers.add(inv)

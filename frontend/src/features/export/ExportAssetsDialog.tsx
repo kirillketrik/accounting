@@ -23,8 +23,8 @@ import { SeparatorField } from '@/components/separator-field'
 
 import { assetsApi } from '@/api/endpoints'
 import { ApiError } from '@/api/client'
-import type { Asset, AssetStatus } from '@/api/types'
-import { ASSET_STATUSES, ASSET_STATUS_LABELS } from '@/api/types'
+import type { Asset } from '@/api/types'
+import { useAssetStatuses } from '@/features/asset-statuses/hooks'
 import { useAssetTypes } from '@/features/asset-types/hooks'
 import { useSettings } from '@/features/settings/hooks'
 import { parseExportTemplate, formatExportLine } from '@/features/export/export-template'
@@ -41,9 +41,10 @@ interface ExportAssetsDialogProps {
 
 export function ExportAssetsDialog({ open, onOpenChange }: ExportAssetsDialogProps) {
   const { data: assetTypes } = useAssetTypes()
+  const { data: assetStatuses } = useAssetStatuses()
   const { data: settings } = useSettings()
 
-  const [status, setStatus] = useState<AssetStatus | 'all'>('all')
+  const [status, setStatus] = useState<number | 'all'>('all')
   const [assetTypeId, setAssetTypeId] = useState<number | 'all'>('all')
   const [template, setTemplate] = useState(DEFAULT_TEMPLATE)
   const [separator, setSeparator] = useState(DEFAULT_SEPARATOR)
@@ -70,9 +71,11 @@ export function ExportAssetsDialog({ open, onOpenChange }: ExportAssetsDialogPro
     name: 'Canon 728 Toner',
     inventory_number: 'INV-1001',
     serial_number: 'SN-CN-9931',
-    status: 'in_use',
-    location: '2 этаж - Бухгалтерия',
-    responsible_person: 'Дана Коэн',
+    status_id: 0,
+    status: { id: 0, name: 'Используется', description: null, is_default: false, is_disposal: false },
+    place_id: 0,
+    place: { id: 0, name: '2 этаж - Бухгалтерия', description: null },
+    responsible_user: { id: 0, username: 'dana', first_name: 'Дана', last_name: 'Коэн' },
     notes: null,
     created_at: '',
     updated_at: '',
@@ -88,7 +91,7 @@ export function ExportAssetsDialog({ open, onOpenChange }: ExportAssetsDialogPro
     setIsExporting(true)
     try {
       const assets = await assetsApi.export({
-        status: status === 'all' ? undefined : status,
+        status_id: status === 'all' ? undefined : status,
         asset_type_id: assetTypeId === 'all' ? undefined : assetTypeId,
       })
 
@@ -134,18 +137,21 @@ export function ExportAssetsDialog({ open, onOpenChange }: ExportAssetsDialogPro
             <div>
               <Label>Статус</Label>
               <Select
-                items={{ all: 'Все статусы', ...ASSET_STATUS_LABELS }}
-                value={status}
-                onValueChange={(value) => setStatus((value as AssetStatus | 'all') ?? 'all')}
+                items={{
+                  all: 'Все статусы',
+                  ...Object.fromEntries((assetStatuses ?? []).map((s) => [String(s.id), s.name])),
+                }}
+                value={status === 'all' ? 'all' : String(status)}
+                onValueChange={(value) => setStatus(!value || value === 'all' ? 'all' : Number(value))}
               >
                 <SelectTrigger className="mt-1.5 w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Все статусы</SelectItem>
-                  {ASSET_STATUSES.map((s) => (
-                    <SelectItem key={s} value={s}>
-                      {ASSET_STATUS_LABELS[s]}
+                  {assetStatuses?.map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)}>
+                      {s.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -188,7 +194,7 @@ export function ExportAssetsDialog({ open, onOpenChange }: ExportAssetsDialogPro
             />
             <p className="mt-1.5 text-sm text-muted-foreground">
               Доступные поля: {'{name}'}, {'{inventory_number}'}, {'{serial_number}'},{' '}
-              {'{status}'}, {'{location}'}, {'{responsible_person}'}, {'{asset_type}'}.
+              {'{status}'}, {'{place}'}, {'{responsible_person}'}, {'{asset_type}'}.
             </p>
           </div>
 

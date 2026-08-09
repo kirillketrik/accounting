@@ -1,21 +1,12 @@
 from __future__ import annotations
 
-import enum
 from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint
-from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.db.base import Base
-
-
-class AssetStatus(str, enum.Enum):
-    ON_REFILL = "on_refill"
-    IN_STORAGE = "in_storage"
-    IN_USE = "in_use"
-    DISPOSED = "disposed"
 
 
 class Asset(Base):
@@ -33,14 +24,15 @@ class Asset(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     inventory_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     serial_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    status: Mapped[AssetStatus] = mapped_column(
-        SAEnum(AssetStatus, native_enum=False, length=50),
-        nullable=False,
-        default=AssetStatus.IN_STORAGE,
-        server_default=AssetStatus.IN_STORAGE.value,
+    status_id: Mapped[int] = mapped_column(
+        ForeignKey("asset_statuses.id", ondelete="RESTRICT"), nullable=False, index=True
     )
-    location: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    responsible_person: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    place_id: Mapped[int | None] = mapped_column(
+        ForeignKey("places.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    responsible_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -50,6 +42,9 @@ class Asset(Base):
     )
 
     asset_type: Mapped["AssetType"] = relationship(back_populates="assets")
+    status: Mapped["AssetStatus"] = relationship(back_populates="assets")
+    place: Mapped["Place | None"] = relationship(back_populates="assets")
+    responsible_user: Mapped["User | None"] = relationship()
     events: Mapped[list["AssetEvent"]] = relationship(
         back_populates="asset", cascade="all, delete-orphan", order_by="AssetEvent.event_date.desc()"
     )

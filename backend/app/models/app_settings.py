@@ -7,12 +7,14 @@ from app.db.base import Base
 
 
 class AppSettings(Base):
-    """Singleton row (id=1) of app-wide defaults used to pre-fill bulk-entry forms."""
+    """Per-user defaults used to pre-fill bulk-entry forms."""
 
     __tablename__ = "app_settings"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    default_responsible_person: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True
+    )
     default_asset_type_id: Mapped[int | None] = mapped_column(
         ForeignKey("asset_types.id", ondelete="SET NULL"), nullable=True
     )

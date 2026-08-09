@@ -45,7 +45,6 @@ const EMPTY_VALUES: AssetEventFormValues = {
   event_type_id: 0,
   event_date: nowLocalIso(),
   description: '',
-  performed_by: '',
 }
 
 function eventToFormValues(event: AssetEvent): AssetEventFormValues {
@@ -53,7 +52,6 @@ function eventToFormValues(event: AssetEvent): AssetEventFormValues {
     event_type_id: event.event_type_id,
     event_date: toDatetimeLocalValue(event.event_date),
     description: event.description ?? '',
-    performed_by: event.performed_by ?? '',
   }
 }
 
@@ -95,14 +93,13 @@ export function AssetEventFormDialog({
       event_type_id: values.event_type_id,
       event_date: values.event_date,
       description: values.description || null,
-      performed_by: values.performed_by || null,
     }
 
     if (isEdit) {
       await updateEvent.mutateAsync({ id: event.id, data: payload })
     } else {
       const created = await createEvent.mutateAsync(payload)
-      if (created.event_type.target_status === 'disposed') {
+      if (created.event_type.target_status.is_disposal) {
         onOpenChange(false)
         toast.success('Актив списан и перемещён в историю')
         navigate('/history')
@@ -171,19 +168,15 @@ export function AssetEventFormDialog({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="performed_by"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Исполнитель</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Служба поддержки" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {isEdit && event.performed_by_user ? (
+              <div>
+                <p className="text-sm font-medium">Исполнитель</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {event.performed_by_user.first_name} {event.performed_by_user.last_name}
+                  {' — обновится на вас при сохранении'}
+                </p>
+              </div>
+            ) : null}
 
             <FormField
               control={form.control}

@@ -74,7 +74,6 @@ export function BulkEventDialog({ open, onOpenChange }: BulkEventDialogProps) {
     defaultValues: {
       event_type_id: 0,
       event_date: nowLocalIso(),
-      performed_by: '',
       description: '',
       separator: DEFAULT_SEPARATOR,
       raw_text: '',
@@ -87,7 +86,6 @@ export function BulkEventDialog({ open, onOpenChange }: BulkEventDialogProps) {
     form.reset({
       event_type_id: 0,
       event_date: nowLocalIso(),
-      performed_by: settings?.default_responsible_person ?? '',
       description: '',
       separator,
       raw_text: '',
@@ -134,7 +132,6 @@ export function BulkEventDialog({ open, onOpenChange }: BulkEventDialogProps) {
       event_type_id: values.event_type_id,
       event_date: values.event_date,
       description: values.description || null,
-      performed_by: values.performed_by || null,
       inventory_numbers: inventoryNumbers,
     })
 
@@ -182,7 +179,7 @@ export function BulkEventDialog({ open, onOpenChange }: BulkEventDialogProps) {
                       ))}
                     </SelectContent>
                   </Select>
-                  {selectedEventType?.target_status === 'disposed' && (
+                  {selectedEventType?.target_status.is_disposal && (
                     <FormDescription>
                       Списанные активы будут перемещены в Историю.
                     </FormDescription>
@@ -200,20 +197,6 @@ export function BulkEventDialog({ open, onOpenChange }: BulkEventDialogProps) {
                   <FormLabel>Дата и время</FormLabel>
                   <FormControl>
                     <Input type="datetime-local" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="performed_by"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Исполнитель</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Служба поддержки" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

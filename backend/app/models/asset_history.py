@@ -23,7 +23,7 @@ class AssetHistory(Base):
     asset_type_name: Mapped[str] = mapped_column(String(100), nullable=False)
     inventory_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     serial_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    location: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    place_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     responsible_person: Mapped[str | None] = mapped_column(String(200), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     asset_created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

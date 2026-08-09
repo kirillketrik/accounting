@@ -21,10 +21,13 @@ class AssetEvent(Base):
     )
     event_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    performed_by: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    performed_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
     asset: Mapped["Asset"] = relationship(back_populates="events")
     event_type: Mapped["EventType"] = relationship(back_populates="events")
+    performed_by_user: Mapped["User | None"] = relationship()

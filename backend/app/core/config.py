@@ -12,6 +12,12 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
     seed_on_startup: bool = True
 
+    session_cookie_name: str = "session"
+    session_ttl_days: int = 14
+    cookie_secure: bool = True
+    seed_admin_username: str = "vlad_rak"
+    seed_admin_password: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:

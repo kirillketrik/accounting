@@ -17,16 +17,27 @@ import type {
   AssetListParams,
   AssetNamingRule,
   AssetNamingRuleInput,
+  AssetStatus,
+  AssetStatusInput,
   AssetType,
   AssetTypeInput,
   AuditLog,
   AuditLogDetail,
   AuditLogListParams,
+  ChangePasswordInput,
   DashboardSummary,
   EventCounter,
   EventType,
   EventTypeInput,
+  LoginInput,
   PaginatedResponse,
+  PasswordResetInput,
+  Place,
+  PlaceInput,
+  UpdateProfileInput,
+  User,
+  UserCreateInput,
+  UserUpdateInput,
 } from '@/api/types'
 
 function buildQuery(params: Record<string, string | number | undefined>): string {
@@ -44,6 +55,21 @@ export const assetTypesApi = {
   update: (id: number, data: AssetTypeInput) =>
     apiClient.put<AssetType>(`/asset-types/${id}`, data),
   delete: (id: number) => apiClient.delete<void>(`/asset-types/${id}`),
+}
+
+export const assetStatusesApi = {
+  list: () => apiClient.get<AssetStatus[]>('/asset-statuses'),
+  create: (data: AssetStatusInput) => apiClient.post<AssetStatus>('/asset-statuses', data),
+  update: (id: number, data: AssetStatusInput) =>
+    apiClient.put<AssetStatus>(`/asset-statuses/${id}`, data),
+  delete: (id: number) => apiClient.delete<void>(`/asset-statuses/${id}`),
+}
+
+export const placesApi = {
+  list: () => apiClient.get<Place[]>('/places'),
+  create: (data: PlaceInput) => apiClient.post<Place>('/places', data),
+  update: (id: number, data: PlaceInput) => apiClient.put<Place>(`/places/${id}`, data),
+  delete: (id: number) => apiClient.delete<void>(`/places/${id}`),
 }
 
 export const assetNamingRulesApi = {
@@ -68,7 +94,7 @@ export const assetsApi = {
     apiClient.get<PaginatedResponse<Asset>>(
       `/assets${buildQuery({
         search: params.search,
-        status: params.status,
+        status_id: params.status_id,
         asset_type_id: params.asset_type_id,
         sort_by: params.sort_by,
         sort_dir: params.sort_dir,
@@ -86,7 +112,7 @@ export const assetsApi = {
     apiClient.post<AssetBulkDeleteResult>('/assets/bulk-delete', { ids }),
   export: (params: AssetExportParams) =>
     apiClient.get<Asset[]>(
-      `/assets/export${buildQuery({ status: params.status, asset_type_id: params.asset_type_id })}`
+      `/assets/export${buildQuery({ status_id: params.status_id, asset_type_id: params.asset_type_id })}`
     ),
   listEvents: (assetId: number) => apiClient.get<AssetEvent[]>(`/assets/${assetId}/events`),
   createEvent: (assetId: number, data: AssetEventInput) =>
@@ -117,6 +143,23 @@ export const assetHistoryApi = {
 
 export const dashboardApi = {
   summary: () => apiClient.get<DashboardSummary>('/dashboard/summary'),
+}
+
+export const authApi = {
+  login: (data: LoginInput) => apiClient.post<User>('/auth/login', data),
+  logout: () => apiClient.post<void>('/auth/logout'),
+  me: () => apiClient.get<User>('/auth/me'),
+  changePassword: (data: ChangePasswordInput) =>
+    apiClient.post<void>('/auth/change-password', data),
+  updateProfile: (data: UpdateProfileInput) => apiClient.patch<User>('/auth/me', data),
+}
+
+export const usersApi = {
+  list: () => apiClient.get<User[]>('/users'),
+  create: (data: UserCreateInput) => apiClient.post<User>('/users', data),
+  update: (id: number, data: UserUpdateInput) => apiClient.patch<User>(`/users/${id}`, data),
+  resetPassword: (id: number, data: PasswordResetInput) =>
+    apiClient.post<User>(`/users/${id}/reset-password`, data),
 }
 
 export const auditLogsApi = {

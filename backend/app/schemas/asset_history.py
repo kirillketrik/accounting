@@ -19,7 +19,7 @@ class AssetHistoryRead(BaseModel):
     asset_type_name: str
     inventory_number: str | None
     serial_number: str | None
-    location: str | None
+    place_name: str | None
     responsible_person: str | None
     notes: str | None
     asset_created_at: datetime

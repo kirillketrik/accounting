@@ -1,16 +1,19 @@
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
-from app.models.asset import Asset, AssetStatus
+from app.models.asset import Asset
+from app.models.asset_status import AssetStatus
 from app.models.asset_type import AssetType
+from app.models.place import Place
+from app.models.user import User
 from app.repositories.base import BaseRepository
 
 SORTABLE_FIELDS: dict[str, object] = {
     "name": Asset.name,
     "inventory_number": Asset.inventory_number,
-    "status": Asset.status,
-    "location": Asset.location,
-    "responsible_person": Asset.responsible_person,
+    "status": AssetStatus.name,
+    "place": Place.name,
+    "responsible_user": User.last_name,
     "created_at": Asset.created_at,
     "asset_type": AssetType.name,
 }
@@ -54,14 +57,20 @@ class AssetRepository(BaseRepository[Asset]):
         self,
         *,
         search: str | None = None,
-        status: AssetStatus | None = None,
+        status_id: int | None = None,
         asset_type_id: int | None = None,
         sort_by: str = "created_at",
         sort_dir: str = "desc",
         page: int = 1,
         page_size: int = 20,
     ) -> tuple[list[Asset], int]:
-        stmt = select(Asset).options(joinedload(Asset.asset_type)).join(AssetType)
+        stmt = (
+            select(Asset)
+            .options(joinedload(Asset.asset_type))
+            .join(AssetType)
+            .outerjoin(Place, Asset.place_id == Place.id)
+            .outerjoin(User, Asset.responsible_user_id == User.id)
+        )
 
         if search:
             like = f"%{search}%"
@@ -70,16 +79,20 @@ class AssetRepository(BaseRepository[Asset]):
                     Asset.name.ilike(like),
                     Asset.inventory_number.ilike(like),
                     Asset.serial_number.ilike(like),
-                    Asset.location.ilike(like),
-                    Asset.responsible_person.ilike(like),
+                    Place.name.ilike(like),
+                    User.first_name.ilike(like),
+                    User.last_name.ilike(like),
                 )
             )
-        if status is not None:
-            stmt = stmt.where(Asset.status == status)
+        if status_id is not None:
+            stmt = stmt.where(Asset.status_id == status_id)
         if asset_type_id is not None:
             stmt = stmt.where(Asset.asset_type_id == asset_type_id)
 
         total = self.db.scalar(select(func.count()).select_from(stmt.subquery()))
+
+        if sort_by == "status":
+            stmt = stmt.join(AssetStatus, Asset.status_id == AssetStatus.id)
 
         sort_column = SORTABLE_FIELDS.get(sort_by, Asset.created_at)
         order = sort_column.desc() if sort_dir == "desc" else sort_column.asc()
@@ -91,19 +104,24 @@ class AssetRepository(BaseRepository[Asset]):
     def list_for_export(
         self,
         *,
-        status: AssetStatus | None = None,
+        status_id: int | None = None,
         asset_type_id: int | None = None,
     ) -> list[Asset]:
         stmt = select(Asset).options(joinedload(Asset.asset_type)).join(AssetType)
-        if status is not None:
-            stmt = stmt.where(Asset.status == status)
+        if status_id is not None:
+            stmt = stmt.where(Asset.status_id == status_id)
         if asset_type_id is not None:
             stmt = stmt.where(Asset.asset_type_id == asset_type_id)
         stmt = stmt.order_by(Asset.name.asc())
         return list(self.db.scalars(stmt).unique())
 
-    def count_by_status(self) -> list[tuple[AssetStatus, int]]:
-        stmt = select(Asset.status, func.count()).group_by(Asset.status)
+    def count_by_status(self) -> list[tuple[int, str, int]]:
+        stmt = (
+            select(AssetStatus.id, AssetStatus.name, func.count(Asset.id))
+            .select_from(Asset)
+            .join(AssetStatus, Asset.status_id == AssetStatus.id)
+            .group_by(AssetStatus.id, AssetStatus.name)
+        )
         return list(self.db.execute(stmt).all())
 
     def total_count(self) -> int:

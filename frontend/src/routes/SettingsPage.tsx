@@ -34,7 +34,6 @@ const NONE_VALUE = 'none'
 
 function settingsToFormValues(settings: AppSettings): SettingsFormValues {
   return {
-    default_responsible_person: settings.default_responsible_person ?? '',
     default_asset_type_id: settings.default_asset_type_id ?? undefined,
     default_bulk_asset_template: settings.default_bulk_asset_template ?? '',
     default_bulk_asset_separator: settings.default_bulk_asset_separator ?? '',
@@ -52,7 +51,6 @@ export function SettingsPage() {
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsFormSchema),
     defaultValues: {
-      default_responsible_person: '',
       default_asset_type_id: undefined,
       default_bulk_asset_template: '',
       default_bulk_asset_separator: '',
@@ -71,7 +69,6 @@ export function SettingsPage() {
 
   async function onSubmit(values: SettingsFormValues) {
     await updateSettings.mutateAsync({
-      default_responsible_person: values.default_responsible_person || null,
       default_asset_type_id: values.default_asset_type_id ?? null,
       default_bulk_asset_template: values.default_bulk_asset_template || null,
       default_bulk_asset_separator: values.default_bulk_asset_separator || null,
@@ -107,24 +104,6 @@ export function SettingsPage() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="default_responsible_person"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Ответственное лицо по умолчанию</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Иванова Дана" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Будет автоматически подставляться при массовом добавлении активов и
-                        событий.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <FormField
                   control={form.control}
                   name="default_asset_type_id"

@@ -2,9 +2,13 @@ import { NavLink } from 'react-router-dom'
 import { Package } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/features/auth/useAuth'
 import { navItems } from '@/layouts/nav-items'
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+  const { user } = useAuth()
+  const visibleItems = navItems.filter((item) => !item.adminOnly || user?.is_admin)
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-14 items-center gap-2 border-b px-4">
@@ -12,7 +16,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         <span className="font-semibold">Учёт активов</span>
       </div>
       <nav className="flex-1 space-y-1 p-3">
-        {navItems.map((item) => (
+        {visibleItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

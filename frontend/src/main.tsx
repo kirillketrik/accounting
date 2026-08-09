@@ -7,6 +7,7 @@ import { RouterProvider } from 'react-router-dom'
 import './index.css'
 import { router } from '@/routes/router'
 import { Toaster } from '@/components/ui/sonner'
+import { AuthProvider } from '@/features/auth/useAuth'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,7 +21,9 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
       <Toaster richColors position="top-right" />
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

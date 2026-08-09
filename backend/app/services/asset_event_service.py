@@ -1,8 +1,9 @@
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import NotFoundError
-from app.models.asset import Asset, AssetStatus
+from app.models.asset import Asset
 from app.models.asset_event import AssetEvent
+from app.models.user import User
 from app.repositories.asset import AssetRepository
 from app.repositories.asset_event import AssetEventRepository
 from app.repositories.asset_history import AssetHistoryRepository
@@ -19,7 +20,17 @@ from app.schemas.asset_event import (
 from app.services.asset_service import ASSET_AUDIT_FIELDS
 from app.services.audit_log_service import AuditLogService, diff_fields, snapshot
 
-EVENT_AUDIT_FIELDS = ["asset_id", "event_type_id", "event_date", "description", "performed_by"]
+EVENT_AUDIT_FIELDS = [
+    "asset_id",
+    "event_type_id",
+    "event_date",
+    "description",
+    "performed_by_user_id",
+]
+
+
+def _full_name(user: User | None) -> str | None:
+    return user.full_name if user else None
 
 
 class AssetEventService:
@@ -49,7 +60,12 @@ class AssetEventService:
         return obj
 
     def create(
-        self, asset_id: int, data: AssetEventCreate, *, action: str = "create"
+        self,
+        asset_id: int,
+        data: AssetEventCreate,
+        current_user: User,
+        *,
+        action: str = "create",
     ) -> AssetEventWithType:
         asset = self.asset_repo.get(asset_id)
         if asset is None:
@@ -58,7 +74,9 @@ class AssetEventService:
         if event_type is None:
             raise NotFoundError("EventType", data.event_type_id)
 
-        event = self.repo.create(asset_id=asset_id, **data.model_dump())
+        event = self.repo.create(
+            asset_id=asset_id, performed_by_user_id=current_user.id, **data.model_dump()
+        )
         response = AssetEventWithType.model_validate(event)
         self.audit.record(
             entity_type="asset_event",
@@ -68,9 +86,9 @@ class AssetEventService:
             changes={"created": snapshot(event, EVENT_AUDIT_FIELDS)},
         )
 
-        self.asset_repo.update(asset, status=event_type.target_status)
+        self.asset_repo.update(asset, status_id=event_type.target_status_id)
 
-        if event_type.target_status == AssetStatus.DISPOSED:
+        if event_type.target_status.is_disposal:
             self._archive_and_delete(asset)
 
         return response
@@ -86,8 +104,8 @@ class AssetEventService:
             asset_type_name=asset.asset_type.name,
             inventory_number=asset.inventory_number,
             serial_number=asset.serial_number,
-            location=asset.location,
-            responsible_person=asset.responsible_person,
+            place_name=asset.place.name if asset.place else None,
+            responsible_person=_full_name(asset.responsible_user),
             notes=asset.notes,
             asset_created_at=asset.created_at,
             disposed_at=latest_event.event_date if latest_event else asset.created_at,
@@ -96,7 +114,7 @@ class AssetEventService:
                     "event_type_name": event.event_type.name,
                     "event_date": event.event_date.isoformat(),
                     "description": event.description,
-                    "performed_by": event.performed_by,
+                    "performed_by": _full_name(event.performed_by_user),
                     "created_at": event.created_at.isoformat(),
                 }
                 for event in reversed(events)
@@ -111,7 +129,9 @@ class AssetEventService:
             changes={"deleted": asset_snapshot, "asset_history_id": history.id},
         )
 
-    def bulk_create_by_inventory_number(self, data: AssetEventBulkCreate) -> AssetEventBulkResult:
+    def bulk_create_by_inventory_number(
+        self, data: AssetEventBulkCreate, current_user: User
+    ) -> AssetEventBulkResult:
         self._ensure_event_type_exists(data.event_type_id)
 
         created: list[AssetEventBulkCreated] = []
@@ -145,9 +165,10 @@ class AssetEventService:
                 event_type_id=data.event_type_id,
                 event_date=data.event_date,
                 description=data.description,
-                performed_by=data.performed_by,
             )
-            event_with_type = self.create(asset.id, event_payload, action="bulk_create")
+            event_with_type = self.create(
+                asset.id, event_payload, current_user, action="bulk_create"
+            )
             created.append(
                 AssetEventBulkCreated(
                     inventory_number=inv,
@@ -158,9 +179,10 @@ class AssetEventService:
 
         return AssetEventBulkResult(created=created, errors=errors)
 
-    def update(self, id_: int, data: AssetEventUpdate) -> AssetEvent:
+    def update(self, id_: int, data: AssetEventUpdate, current_user: User) -> AssetEvent:
         obj = self.get(id_)
         payload = data.model_dump(exclude_unset=True)
+        payload["performed_by_user_id"] = current_user.id
         if "event_type_id" in payload:
             self._ensure_event_type_exists(payload["event_type_id"])
         before = {key: getattr(obj, key) for key in payload}

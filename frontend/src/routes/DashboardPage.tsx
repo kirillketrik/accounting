@@ -8,7 +8,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/empty-state'
 import { ErrorState } from '@/components/error-state'
-import { ASSET_STATUS_LABELS } from '@/api/types'
 import { useDashboardSummary } from '@/features/dashboard/hooks'
 import { ExportAssetsDialog } from '@/features/export/ExportAssetsDialog'
 
@@ -73,8 +72,8 @@ export function DashboardPage() {
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {data.assets_by_status.map((entry) => (
-                      <Badge key={entry.status} variant="secondary" className="text-sm">
-                        {ASSET_STATUS_LABELS[entry.status]}: {entry.count}
+                      <Badge key={entry.status_id} variant="secondary" className="text-sm">
+                        {entry.status_name}: {entry.count}
                       </Badge>
                     ))}
                   </div>
@@ -118,7 +117,12 @@ export function DashboardPage() {
                         <span className="text-muted-foreground"> — {event.event_type_name}</span>
                       </div>
                       <div className="flex items-center gap-3 text-muted-foreground">
-                        {event.performed_by && <span>{event.performed_by}</span>}
+                        {event.performed_by_user && (
+                          <span>
+                            {event.performed_by_user.first_name}{' '}
+                            {event.performed_by_user.last_name}
+                          </span>
+                        )}
                         <span>{new Date(event.event_date).toLocaleString()}</span>
                       </div>
                     </li>

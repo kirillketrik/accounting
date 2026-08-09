@@ -2,6 +2,8 @@ import type { AssetHistoryListParams, AssetListParams, AuditLogListParams } from
 
 export const queryKeys = {
   assetTypes: ['asset-types'] as const,
+  assetStatuses: ['asset-statuses'] as const,
+  places: ['places'] as const,
   assetNamingRules: ['asset-naming-rules'] as const,
   eventTypes: ['event-types'] as const,
   assets: (params: AssetListParams) => ['assets', params] as const,
@@ -14,4 +16,6 @@ export const queryKeys = {
   auditLog: (id: number) => ['audit-logs', id] as const,
   dashboard: ['dashboard', 'summary'] as const,
   settings: ['settings'] as const,
+  authMe: ['auth', 'me'] as const,
+  users: ['users'] as const,
 }

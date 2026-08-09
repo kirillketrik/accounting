@@ -54,8 +54,8 @@ import { ErrorState } from '@/components/error-state'
 import { DataPagination } from '@/components/data-pagination'
 import { StatusBadge } from '@/components/status-badge'
 
-import type { Asset, AssetListParams, AssetStatus } from '@/api/types'
-import { ASSET_STATUSES, ASSET_STATUS_LABELS } from '@/api/types'
+import type { Asset, AssetListParams } from '@/api/types'
+import { useAssetStatuses } from '@/features/asset-statuses/hooks'
 import { useAssetTypes } from '@/features/asset-types/hooks'
 import { useAssets, useBulkDeleteAssets, useDeleteAsset } from '@/features/assets/hooks'
 import { AssetFormDialog } from '@/features/assets/AssetFormDialog'
@@ -71,15 +71,15 @@ const COLUMNS: { key: SortableColumn; label: string }[] = [
   { key: 'asset_type', label: 'Тип' },
   { key: 'inventory_number', label: 'Инв. номер' },
   { key: 'status', label: 'Статус' },
-  { key: 'location', label: 'Местоположение' },
-  { key: 'responsible_person', label: 'Ответственное лицо' },
+  { key: 'place', label: 'Место' },
+  { key: 'responsible_user', label: 'Ответственное лицо' },
 ]
 
 export function AssetsPage() {
   const navigate = useNavigate()
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
-  const [status, setStatus] = useState<AssetStatus | 'all'>('all')
+  const [status, setStatus] = useState<number | 'all'>('all')
   const [assetTypeId, setAssetTypeId] = useState<number | 'all'>('all')
   const [sortBy, setSortBy] = useState<SortableColumn>('created_at')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
@@ -103,9 +103,10 @@ export function AssetsPage() {
   }, 350)
 
   const { data: assetTypes } = useAssetTypes()
+  const { data: assetStatuses } = useAssetStatuses()
   const { data, isPending, isError, error, refetch, isPlaceholderData } = useAssets({
     search: search || undefined,
-    status: status === 'all' ? undefined : status,
+    status_id: status === 'all' ? undefined : status,
     asset_type_id: assetTypeId === 'all' ? undefined : assetTypeId,
     sort_by: sortBy,
     sort_dir: sortDir,
@@ -224,10 +225,13 @@ export function AssetsPage() {
           />
         </div>
         <Select
-          items={{ all: 'Все статусы', ...ASSET_STATUS_LABELS }}
-          value={status}
+          items={{
+            all: 'Все статусы',
+            ...Object.fromEntries((assetStatuses ?? []).map((s) => [String(s.id), s.name])),
+          }}
+          value={status === 'all' ? 'all' : String(status)}
           onValueChange={(value) => {
-            setStatus(value as AssetStatus | 'all')
+            setStatus(value === 'all' ? 'all' : Number(value))
             setPage(1)
             clearSelection()
           }}
@@ -237,9 +241,9 @@ export function AssetsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Все статусы</SelectItem>
-            {ASSET_STATUSES.map((s) => (
-              <SelectItem key={s} value={s}>
-                {ASSET_STATUS_LABELS[s]}
+            {assetStatuses?.map((s) => (
+              <SelectItem key={s.id} value={String(s.id)}>
+                {s.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -367,8 +371,12 @@ export function AssetsPage() {
                     <TableCell>
                       <StatusBadge status={asset.status} />
                     </TableCell>
-                    <TableCell>{asset.location ?? '—'}</TableCell>
-                    <TableCell>{asset.responsible_person ?? '—'}</TableCell>
+                    <TableCell>{asset.place?.name ?? '—'}</TableCell>
+                    <TableCell>
+                      {asset.responsible_user
+                        ? `${asset.responsible_user.first_name} ${asset.responsible_user.last_name}`
+                        : '—'}
+                    </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger

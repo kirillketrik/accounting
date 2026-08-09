@@ -21,18 +21,13 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 
 import { StatusBadge } from '@/components/status-badge'
 
 import type { Asset } from '@/api/types'
 import { useAssetTypes } from '@/features/asset-types/hooks'
+import { usePlaces } from '@/features/places/hooks'
 import { useCreateAsset, useUpdateAsset } from '@/features/assets/hooks'
 import { assetFormSchema, type AssetFormValues } from '@/features/assets/asset-schema'
 
@@ -41,8 +36,7 @@ const EMPTY_VALUES: AssetFormValues = {
   name: '',
   inventory_number: '',
   serial_number: '',
-  location: '',
-  responsible_person: '',
+  place_id: undefined,
   notes: '',
 }
 
@@ -52,8 +46,7 @@ function assetToFormValues(asset: Asset): AssetFormValues {
     name: asset.name,
     inventory_number: asset.inventory_number ?? '',
     serial_number: asset.serial_number ?? '',
-    location: asset.location ?? '',
-    responsible_person: asset.responsible_person ?? '',
+    place_id: asset.place_id ?? undefined,
     notes: asset.notes ?? '',
   }
 }
@@ -67,6 +60,7 @@ interface AssetFormDialogProps {
 export function AssetFormDialog({ open, onOpenChange, asset }: AssetFormDialogProps) {
   const isEdit = !!asset
   const { data: assetTypes } = useAssetTypes()
+  const { data: places } = usePlaces()
   const createAsset = useCreateAsset()
   const updateAsset = useUpdateAsset()
 
@@ -90,8 +84,7 @@ export function AssetFormDialog({ open, onOpenChange, asset }: AssetFormDialogPr
       name: values.name || null,
       inventory_number: values.inventory_number || null,
       serial_number: values.serial_number || null,
-      location: values.location || null,
-      responsible_person: values.responsible_person || null,
+      place_id: values.place_id ?? null,
       notes: values.notes || null,
     }
 
@@ -150,26 +143,19 @@ export function AssetFormDialog({ open, onOpenChange, asset }: AssetFormDialogPr
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Тип актива</FormLabel>
-                  <Select
-                    items={Object.fromEntries(
-                      (assetTypes ?? []).map((type) => [String(type.id), type.name])
-                    )}
-                    value={field.value ? String(field.value) : ''}
-                    onValueChange={(value) => field.onChange(Number(value))}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Выберите тип актива" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {assetTypes?.map((type) => (
-                        <SelectItem key={type.id} value={String(type.id)}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <SearchableSelect
+                      items={(assetTypes ?? []).map((type) => ({
+                        value: String(type.id),
+                        label: type.name,
+                      }))}
+                      value={field.value ? String(field.value) : undefined}
+                      onValueChange={(value) => field.onChange(value ? Number(value) : undefined)}
+                      placeholder="Выберите тип актива"
+                      searchPlaceholder="Поиск типа актива..."
+                      emptyMessage="Типы активов не найдены"
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -181,9 +167,9 @@ export function AssetFormDialog({ open, onOpenChange, asset }: AssetFormDialogPr
                 name="inventory_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Инвентарный номер</FormLabel>
+                    <FormLabel>Инвентарный номер (необязательно)</FormLabel>
                     <FormControl>
-                      <Input placeholder="INV-1001" {...field} />
+                      <Input placeholder="Автоматически, если оставить пустым" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -204,34 +190,39 @@ export function AssetFormDialog({ open, onOpenChange, asset }: AssetFormDialogPr
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Местоположение</FormLabel>
-                    <FormControl>
-                      <Input placeholder="2 этаж - Бухгалтерия" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="responsible_person"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ответственное лицо</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Иванова Дана" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <FormField
+              control={form.control}
+              name="place_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Место</FormLabel>
+                  <FormControl>
+                    <SearchableSelect
+                      items={(places ?? []).map((place) => ({
+                        value: String(place.id),
+                        label: place.name,
+                      }))}
+                      value={field.value ? String(field.value) : undefined}
+                      onValueChange={(value) => field.onChange(value ? Number(value) : undefined)}
+                      placeholder="Не указано"
+                      searchPlaceholder="Поиск места..."
+                      emptyMessage="Места не найдены"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {isEdit && asset.responsible_user ? (
+              <div>
+                <p className="text-sm font-medium">Ответственное лицо</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {asset.responsible_user.first_name} {asset.responsible_user.last_name}
+                  {' — обновится на вас при сохранении'}
+                </p>
+              </div>
+            ) : null}
 
             <FormField
               control={form.control}

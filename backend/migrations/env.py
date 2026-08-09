@@ -17,9 +17,13 @@ from app.models import (  # noqa: E402,F401
     AssetEvent,
     AssetHistory,
     AssetNamingRule,
+    AssetStatus,
     AssetType,
     AuditLog,
     EventType,
+    Place,
+    User,
+    UserSession,
 )
 
 # this is the Alembic Config object, which provides

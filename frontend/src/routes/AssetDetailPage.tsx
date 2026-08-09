@@ -136,8 +136,15 @@ export function AssetDetailPage() {
             </div>
             <InfoRow label="Инвентарный номер" value={asset.inventory_number ?? '—'} />
             <InfoRow label="Серийный номер" value={asset.serial_number ?? '—'} />
-            <InfoRow label="Местоположение" value={asset.location ?? '—'} />
-            <InfoRow label="Ответственное лицо" value={asset.responsible_person ?? '—'} />
+            <InfoRow label="Место" value={asset.place?.name ?? '—'} />
+            <InfoRow
+              label="Ответственное лицо"
+              value={
+                asset.responsible_user
+                  ? `${asset.responsible_user.first_name} ${asset.responsible_user.last_name}`
+                  : '—'
+              }
+            />
             <InfoRow
               label="Создан"
               value={new Date(asset.created_at).toLocaleDateString()}
@@ -261,9 +268,12 @@ export function AssetDetailPage() {
                   {event.description && (
                     <p className="mt-1 text-sm text-muted-foreground">{event.description}</p>
                   )}
-                  {event.performed_by && (
+                  {event.performed_by_user && (
                     <div className="mt-1 flex gap-3 text-xs text-muted-foreground">
-                      <span>Исполнитель: {event.performed_by}</span>
+                      <span>
+                        Исполнитель: {event.performed_by_user.first_name}{' '}
+                        {event.performed_by_user.last_name}
+                      </span>
                     </div>
                   )}
                 </li>

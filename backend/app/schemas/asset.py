@@ -2,8 +2,10 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.asset import AssetStatus
+from app.schemas.asset_status import AssetStatusRead
 from app.schemas.asset_type import AssetTypeRead
+from app.schemas.place import PlaceRead
+from app.schemas.user import UserSummary
 
 
 class AssetBase(BaseModel):
@@ -11,9 +13,8 @@ class AssetBase(BaseModel):
     name: str | None = Field(default=None, max_length=200)
     inventory_number: str | None = Field(default=None, max_length=100)
     serial_number: str | None = Field(default=None, max_length=100)
-    status: AssetStatus = AssetStatus.IN_STORAGE
-    location: str | None = Field(default=None, max_length=200)
-    responsible_person: str | None = Field(default=None, max_length=200)
+    status_id: int | None = None
+    place_id: int | None = None
     notes: str | None = None
 
 
@@ -26,9 +27,8 @@ class AssetUpdate(BaseModel):
     name: str | None = Field(default=None, max_length=200)
     inventory_number: str | None = Field(default=None, max_length=100)
     serial_number: str | None = Field(default=None, max_length=100)
-    status: AssetStatus | None = None
-    location: str | None = Field(default=None, max_length=200)
-    responsible_person: str | None = Field(default=None, max_length=200)
+    status_id: int | None = None
+    place_id: int | None = None
     notes: str | None = None
 
 
@@ -37,6 +37,10 @@ class AssetRead(AssetBase):
 
     id: int
     name: str
+    status_id: int
+    status: AssetStatusRead
+    place: PlaceRead | None
+    responsible_user: UserSummary | None
     created_at: datetime
     updated_at: datetime
 
@@ -53,7 +57,6 @@ class AssetBulkItem(BaseModel):
 
 class AssetBulkCreate(BaseModel):
     asset_type_id: int
-    responsible_person: str | None = Field(default=None, max_length=200)
     items: list[AssetBulkItem] = Field(min_length=1)
 
 

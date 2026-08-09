@@ -2,9 +2,12 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from app.schemas.user import UserSummary
+
 
 class AssetsByStatus(BaseModel):
-    status: str
+    status_id: int
+    status_name: str
     count: int
 
 
@@ -14,7 +17,7 @@ class LatestEvent(BaseModel):
     asset_name: str
     event_type_name: str
     event_date: datetime
-    performed_by: str | None
+    performed_by_user: UserSummary | None
     created_at: datetime
 
 

@@ -9,17 +9,15 @@ class AppSettingsService:
     def __init__(self, db: Session) -> None:
         self.repo = AppSettingsRepository(db)
 
-    def get(self) -> AppSettings:
-        obj = self.repo.get_singleton()
+    def get(self, user_id: int) -> AppSettings:
+        obj = self.repo.get_for_user(user_id)
         if obj is None:
-            # Defensive fallback: the migration seeds row id=1, but cover the case
-            # where the table was created without that seed row running.
-            obj = AppSettings(id=1)
+            obj = AppSettings(user_id=user_id)
             self.repo.db.add(obj)
             self.repo.db.commit()
             self.repo.db.refresh(obj)
         return obj
 
-    def update(self, data: AppSettingsUpdate) -> AppSettings:
-        obj = self.get()
+    def update(self, user_id: int, data: AppSettingsUpdate) -> AppSettings:
+        obj = self.get(user_id)
         return self.repo.update(obj, **data.model_dump())

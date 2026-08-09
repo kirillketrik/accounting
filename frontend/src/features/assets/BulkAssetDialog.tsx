@@ -82,7 +82,6 @@ export function BulkAssetDialog({ open, onOpenChange }: BulkAssetDialogProps) {
     resolver: zodResolver(bulkAssetFormSchema),
     defaultValues: {
       asset_type_id: 0,
-      responsible_person: '',
       template: DEFAULT_TEMPLATE,
       separator: DEFAULT_SEPARATOR,
       raw_text: '',
@@ -94,7 +93,6 @@ export function BulkAssetDialog({ open, onOpenChange }: BulkAssetDialogProps) {
     const separator = settings?.default_bulk_asset_separator || DEFAULT_SEPARATOR
     form.reset({
       asset_type_id: settings?.default_asset_type_id ?? 0,
-      responsible_person: settings?.default_responsible_person ?? '',
       template: settings?.default_bulk_asset_template || DEFAULT_TEMPLATE,
       separator,
       raw_text: '',
@@ -154,7 +152,6 @@ export function BulkAssetDialog({ open, onOpenChange }: BulkAssetDialogProps) {
 
     const result = await bulkCreate.mutateAsync({
       asset_type_id: values.asset_type_id,
-      responsible_person: values.responsible_person || null,
       items,
     })
 
@@ -169,58 +166,43 @@ export function BulkAssetDialog({ open, onOpenChange }: BulkAssetDialogProps) {
         <DialogHeader>
           <DialogTitle>Массовое добавление активов</DialogTitle>
           <DialogDescription>
-            Выберите тип и ответственное лицо для всей партии, затем вставьте по одному активу на
-            строку в соответствии с шаблоном ниже.
+            Выберите тип актива для всей партии, затем вставьте по одному активу на строку в
+            соответствии с шаблоном ниже. Ответственным будет указан текущий пользователь.
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="asset_type_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Тип актива</FormLabel>
-                    <Select
-                      items={Object.fromEntries(
-                        (assetTypes ?? []).map((type) => [String(type.id), type.name])
-                      )}
-                      value={field.value ? String(field.value) : ''}
-                      onValueChange={(value) => field.onChange(Number(value))}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Выберите тип актива" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {assetTypes?.map((type) => (
-                          <SelectItem key={type.id} value={String(type.id)}>
-                            {type.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="responsible_person"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Ответственное лицо</FormLabel>
+            <FormField
+              control={form.control}
+              name="asset_type_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Тип актива</FormLabel>
+                  <Select
+                    items={Object.fromEntries(
+                      (assetTypes ?? []).map((type) => [String(type.id), type.name])
+                    )}
+                    value={field.value ? String(field.value) : ''}
+                    onValueChange={(value) => field.onChange(Number(value))}
+                  >
                     <FormControl>
-                      <Input placeholder="Иванова Дана" {...field} />
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Выберите тип актива" />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+                    <SelectContent>
+                      {assetTypes?.map((type) => (
+                        <SelectItem key={type.id} value={String(type.id)}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}

@@ -34,7 +34,7 @@ function ValuesTable({ data }: { data: Record<string, unknown> }) {
             <td className="w-48 py-2 pr-4 align-top text-muted-foreground">
               {auditFieldLabel(field)}
             </td>
-            <td className="py-2 font-medium">{formatAuditValue(value, field)}</td>
+            <td className="py-2 font-medium">{formatAuditValue(value)}</td>
           </tr>
         ))}
       </tbody>
@@ -56,8 +56,8 @@ function DiffTable({ diff }: { diff: Record<string, { before: unknown; after: un
         {Object.entries(diff).map(([field, { before, after }]) => (
           <tr key={field} className="border-b last:border-0">
             <td className="py-2 pr-4 align-top text-muted-foreground">{auditFieldLabel(field)}</td>
-            <td className="py-2 pr-4 align-top">{formatAuditValue(before, field)}</td>
-            <td className="py-2 align-top font-medium">{formatAuditValue(after, field)}</td>
+            <td className="py-2 pr-4 align-top">{formatAuditValue(before)}</td>
+            <td className="py-2 align-top font-medium">{formatAuditValue(after)}</td>
           </tr>
         ))}
       </tbody>

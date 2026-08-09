@@ -1,11 +1,11 @@
-import { ASSET_STATUS_LABELS, type Asset } from '@/api/types'
+import type { Asset } from '@/api/types'
 
 export type ExportField =
   | 'name'
   | 'inventory_number'
   | 'serial_number'
   | 'status'
-  | 'location'
+  | 'place'
   | 'responsible_person'
   | 'asset_type'
 
@@ -14,7 +14,7 @@ const VALID_FIELDS: ExportField[] = [
   'inventory_number',
   'serial_number',
   'status',
-  'location',
+  'place',
   'responsible_person',
   'asset_type',
 ]
@@ -24,7 +24,7 @@ export const EXPORT_FIELD_LABELS: Record<ExportField, string> = {
   inventory_number: 'Инвентарный номер',
   serial_number: 'Серийный номер',
   status: 'Статус',
-  location: 'Местоположение',
+  place: 'Место',
   responsible_person: 'Ответственное лицо',
   asset_type: 'Тип актива',
 }
@@ -68,11 +68,13 @@ function exportFieldValue(asset: Asset, field: ExportField): string {
     case 'serial_number':
       return asset.serial_number ?? ''
     case 'status':
-      return ASSET_STATUS_LABELS[asset.status]
-    case 'location':
-      return asset.location ?? ''
+      return asset.status.name
+    case 'place':
+      return asset.place?.name ?? ''
     case 'responsible_person':
-      return asset.responsible_person ?? ''
+      return asset.responsible_user
+        ? `${asset.responsible_user.first_name} ${asset.responsible_user.last_name}`
+        : ''
     case 'asset_type':
       return asset.asset_type.name
   }

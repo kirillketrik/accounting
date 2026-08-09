@@ -1,12 +1,74 @@
-export type AssetStatus = 'on_refill' | 'in_storage' | 'in_use' | 'disposed'
+export interface UserSummary {
+  id: number
+  username: string
+  first_name: string
+  last_name: string
+}
 
-export const ASSET_STATUSES: AssetStatus[] = ['on_refill', 'in_storage', 'in_use', 'disposed']
+export interface User extends UserSummary {
+  is_admin: boolean
+  is_active: boolean
+}
 
-export const ASSET_STATUS_LABELS: Record<AssetStatus, string> = {
-  on_refill: 'На заправке',
-  in_storage: 'На складе',
-  in_use: 'Используется',
-  disposed: 'Списан',
+export interface UserCreateInput {
+  username: string
+  password: string
+  first_name: string
+  last_name: string
+  is_admin?: boolean
+}
+
+export interface UserUpdateInput {
+  username?: string
+  first_name?: string
+  last_name?: string
+  is_admin?: boolean
+  is_active?: boolean
+}
+
+export interface PasswordResetInput {
+  password: string
+}
+
+export interface LoginInput {
+  username: string
+  password: string
+}
+
+export interface ChangePasswordInput {
+  current_password: string
+  new_password: string
+}
+
+export interface UpdateProfileInput {
+  first_name?: string
+  last_name?: string
+}
+
+export interface AssetStatus {
+  id: number
+  name: string
+  description: string | null
+  is_default: boolean
+  is_disposal: boolean
+}
+
+export interface AssetStatusInput {
+  name: string
+  description?: string | null
+  is_default?: boolean
+  is_disposal?: boolean
+}
+
+export interface Place {
+  id: number
+  name: string
+  description: string | null
+}
+
+export interface PlaceInput {
+  name: string
+  description?: string | null
 }
 
 export interface AssetType {
@@ -24,6 +86,7 @@ export interface EventType {
   id: number
   name: string
   description: string | null
+  target_status_id: number
   target_status: AssetStatus
   counter_label: string | null
 }
@@ -31,7 +94,7 @@ export interface EventType {
 export interface EventTypeInput {
   name: string
   description?: string | null
-  target_status: AssetStatus
+  target_status_id: number
   counter_label?: string | null
 }
 
@@ -59,9 +122,11 @@ export interface Asset {
   name: string
   inventory_number: string | null
   serial_number: string | null
+  status_id: number
   status: AssetStatus
-  location: string | null
-  responsible_person: string | null
+  place_id: number | null
+  place: Place | null
+  responsible_user: UserSummary | null
   notes: string | null
   created_at: string
   updated_at: string
@@ -73,8 +138,8 @@ export interface AssetInput {
   name?: string | null
   inventory_number?: string | null
   serial_number?: string | null
-  location?: string | null
-  responsible_person?: string | null
+  status_id?: number | null
+  place_id?: number | null
   notes?: string | null
 }
 
@@ -84,7 +149,7 @@ export interface AssetEvent {
   event_type_id: number
   event_date: string
   description: string | null
-  performed_by: string | null
+  performed_by_user: UserSummary | null
   created_at: string
   event_type: EventType
 }
@@ -93,7 +158,6 @@ export interface AssetEventInput {
   event_type_id: number
   event_date: string
   description?: string | null
-  performed_by?: string | null
 }
 
 export interface EventCounter {
@@ -117,7 +181,7 @@ export interface AssetHistory {
   asset_type_name: string
   inventory_number: string | null
   serial_number: string | null
-  location: string | null
+  place_name: string | null
   responsible_person: string | null
   notes: string | null
   asset_created_at: string
@@ -134,7 +198,8 @@ export interface PaginatedResponse<T> {
 }
 
 export interface AssetsByStatus {
-  status: AssetStatus
+  status_id: number
+  status_name: string
   count: number
 }
 
@@ -144,7 +209,7 @@ export interface LatestEvent {
   asset_name: string
   event_type_name: string
   event_date: string
-  performed_by: string | null
+  performed_by_user: UserSummary | null
   created_at: string
 }
 
@@ -156,14 +221,14 @@ export interface DashboardSummary {
 
 export interface AssetListParams {
   search?: string
-  status?: AssetStatus
+  status_id?: number
   asset_type_id?: number
   sort_by?:
     | 'name'
     | 'inventory_number'
     | 'status'
-    | 'location'
-    | 'responsible_person'
+    | 'place'
+    | 'responsible_user'
     | 'created_at'
     | 'asset_type'
   sort_dir?: 'asc' | 'desc'
@@ -178,7 +243,6 @@ export interface AssetHistoryListParams {
 
 export interface AppSettings {
   id: number
-  default_responsible_person: string | null
   default_asset_type_id: number | null
   default_bulk_asset_template: string | null
   default_bulk_asset_separator: string | null
@@ -188,7 +252,6 @@ export interface AppSettings {
 }
 
 export interface AppSettingsInput {
-  default_responsible_person?: string | null
   default_asset_type_id?: number | null
   default_bulk_asset_template?: string | null
   default_bulk_asset_separator?: string | null
@@ -198,7 +261,7 @@ export interface AppSettingsInput {
 }
 
 export interface AssetExportParams {
-  status?: AssetStatus
+  status_id?: number
   asset_type_id?: number
 }
 
@@ -210,7 +273,6 @@ export interface AssetBulkItem {
 
 export interface AssetBulkCreateInput {
   asset_type_id: number
-  responsible_person?: string | null
   items: AssetBulkItem[]
 }
 
@@ -228,7 +290,6 @@ export interface AssetEventBulkCreateInput {
   event_type_id: number
   event_date: string
   description?: string | null
-  performed_by?: string | null
   inventory_numbers: string[]
 }
 

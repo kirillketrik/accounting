@@ -6,8 +6,8 @@ from fastapi.responses import JSONResponse
 
 from app.api.router import api_router
 from app.core.config import get_settings
-from app.core.exceptions import ConflictError, NotFoundError
-from app.db.seed import seed_if_empty
+from app.core.exceptions import ConflictError, ForbiddenError, NotFoundError, UnauthorizedError
+from app.db.seed import ensure_seed_admin, seed_if_empty
 from app.db.session import SessionLocal
 
 settings = get_settings()
@@ -15,12 +15,13 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if settings.seed_on_startup:
-        db = SessionLocal()
-        try:
+    db = SessionLocal()
+    try:
+        ensure_seed_admin(db)
+        if settings.seed_on_startup:
             seed_if_empty(db)
-        finally:
-            db.close()
+    finally:
+        db.close()
     yield
 
 
@@ -43,6 +44,16 @@ def not_found_handler(request: Request, exc: NotFoundError) -> JSONResponse:
 @app.exception_handler(ConflictError)
 def conflict_handler(request: Request, exc: ConflictError) -> JSONResponse:
     return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+
+@app.exception_handler(UnauthorizedError)
+def unauthorized_handler(request: Request, exc: UnauthorizedError) -> JSONResponse:
+    return JSONResponse(status_code=401, content={"detail": str(exc)})
+
+
+@app.exception_handler(ForbiddenError)
+def forbidden_handler(request: Request, exc: ForbiddenError) -> JSONResponse:
+    return JSONResponse(status_code=403, content={"detail": str(exc)})
 
 
 app.include_router(api_router, prefix=settings.api_prefix)
