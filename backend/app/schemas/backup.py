@@ -2,19 +2,37 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.services.backup.types import BackupSettingsType
+
 
 class BackupSettingsRead(BaseModel):
     id: int
+    name: str
+    type: BackupSettingsType
     enabled: bool
     interval_hours: int | None
-    has_bot_token: bool
+    has_credentials: bool
     last_run_at: datetime | None
+    updated_at: datetime
+
+
+class BackupSettingsCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    type: BackupSettingsType
+    enabled: bool = False
+    interval_hours: int | None = Field(default=None, ge=1, le=168)
+    # Opaque, transport-specific string produced by the frontend's type-specific
+    # creation form (e.g. a bare bot token for Telegram). See
+    # app.services.backup.credentials.CredentialCodec — the backend never
+    # interprets its structure beyond decode()-validating it for `type`.
+    credentials: str | None = Field(default=None, max_length=2000)
 
 
 class BackupSettingsUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
     enabled: bool | None = None
     interval_hours: int | None = Field(default=None, ge=1, le=168)
-    telegram_bot_token: str | None = Field(default=None, max_length=300)
+    credentials: str | None = Field(default=None, max_length=2000)
 
 
 class BackupRecipientBase(BaseModel):
@@ -56,6 +74,7 @@ class BackupRunRead(BaseModel):
     error_message: str | None
     delivery_details: list[DeliveryResult]
     triggered_by_user_id: int | None
+    backup_settings_id: int | None
     created_at: datetime
 
 

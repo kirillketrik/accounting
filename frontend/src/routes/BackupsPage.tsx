@@ -5,7 +5,7 @@ import { Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 import { useAuth } from '@/features/auth/useAuth'
-import { BackupSettingsCard } from '@/features/backups/BackupSettingsCard'
+import { BackupSettingsSection } from '@/features/backups/BackupSettingsSection'
 import { RecipientsSection } from '@/features/backups/RecipientsSection'
 import { BackupRunsTable } from '@/features/backups/BackupRunsTable'
 import { ImportDatabaseDialog } from '@/features/backups/ImportDatabaseDialog'
@@ -34,7 +34,7 @@ export function BackupsPage() {
         </Button>
       </div>
 
-      <BackupSettingsCard />
+      <BackupSettingsSection />
       <RecipientsSection />
       <BackupRunsTable />
 

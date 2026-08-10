@@ -5,3 +5,6 @@
 .DS_Store
 Thumbs.db
 .notes
+
+# Environment variables (single root .env, see .env.example)
+.env

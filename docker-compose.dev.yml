@@ -6,6 +6,7 @@ services:
     build:
       context: ./backend
       target: dev
+    env_file: .env
     environment:
       REDIS_URL: redis://redis:6379/0
     ports:
@@ -20,6 +21,7 @@ services:
     build:
       context: ./backend
       target: dev
+    env_file: .env
     environment:
       REDIS_URL: redis://redis:6379/0
     volumes:
@@ -33,6 +35,7 @@ services:
     build:
       context: ./backend
       target: dev
+    env_file: .env
     environment:
       REDIS_URL: redis://redis:6379/0
     volumes:
@@ -46,6 +49,7 @@ services:
     build:
       context: ./frontend
       target: dev
+    env_file: .env
     environment:
       VITE_PROXY_TARGET: http://backend:8000
     ports:

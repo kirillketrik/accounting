@@ -15,6 +15,7 @@ from app.schemas.backup import (
     BackupRecipientRead,
     BackupRecipientUpdate,
     BackupRunRead,
+    BackupSettingsCreate,
     BackupSettingsRead,
     BackupSettingsUpdate,
     ImportResultRead,
@@ -28,27 +29,55 @@ router = APIRouter(prefix="/backups", tags=["Backups"])
 def _settings_to_read(settings: BackupSettings) -> BackupSettingsRead:
     return BackupSettingsRead(
         id=settings.id,
+        name=settings.name,
+        type=settings.type_enum,
         enabled=settings.enabled,
         interval_hours=settings.interval_hours,
-        has_bot_token=bool(settings.telegram_bot_token),
+        has_credentials=bool(settings.credentials),
         last_run_at=settings.last_run_at,
+        updated_at=settings.updated_at,
     )
 
 
-@router.get("/settings", response_model=BackupSettingsRead)
-def get_backup_settings(db: Session = Depends(get_db)) -> BackupSettingsRead:
-    return _settings_to_read(BackupService(db).get_settings())
+@router.get("/settings", response_model=list[BackupSettingsRead])
+def list_backup_settings(
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_admin)
+) -> list[BackupSettingsRead]:
+    return [_settings_to_read(s) for s in BackupService(db).list_settings()]
 
 
-@router.put("/settings", response_model=BackupSettingsRead)
-def update_backup_settings(
-    payload: BackupSettingsUpdate, db: Session = Depends(get_db)
+@router.post("/settings", response_model=BackupSettingsRead, status_code=status.HTTP_201_CREATED)
+def create_backup_settings(
+    payload: BackupSettingsCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin),
 ) -> BackupSettingsRead:
-    return _settings_to_read(BackupService(db).update_settings(payload))
+    return _settings_to_read(BackupService(db).create_settings(payload))
+
+
+@router.patch("/settings/{settings_id}", response_model=BackupSettingsRead)
+def update_backup_settings(
+    settings_id: int,
+    payload: BackupSettingsUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin),
+) -> BackupSettingsRead:
+    return _settings_to_read(BackupService(db).update_settings(settings_id, payload))
+
+
+@router.delete("/settings/{settings_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_backup_settings(
+    settings_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin),
+) -> None:
+    BackupService(db).delete_settings(settings_id)
 
 
 @router.get("/recipients", response_model=list[BackupRecipientRead])
-def list_recipients(db: Session = Depends(get_db)) -> list[BackupRecipientRead]:
+def list_recipients(
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_admin)
+) -> list[BackupRecipientRead]:
     return BackupService(db).list_recipients()
 
 
@@ -56,26 +85,36 @@ def list_recipients(db: Session = Depends(get_db)) -> list[BackupRecipientRead]:
     "/recipients", response_model=BackupRecipientRead, status_code=status.HTTP_201_CREATED
 )
 def create_recipient(
-    payload: BackupRecipientCreate, db: Session = Depends(get_db)
+    payload: BackupRecipientCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin),
 ) -> BackupRecipientRead:
     return BackupService(db).create_recipient(payload)
 
 
 @router.patch("/recipients/{recipient_id}", response_model=BackupRecipientRead)
 def update_recipient(
-    recipient_id: int, payload: BackupRecipientUpdate, db: Session = Depends(get_db)
+    recipient_id: int,
+    payload: BackupRecipientUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin),
 ) -> BackupRecipientRead:
     return BackupService(db).update_recipient(recipient_id, payload)
 
 
 @router.delete("/recipients/{recipient_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_recipient(recipient_id: int, db: Session = Depends(get_db)) -> None:
+def delete_recipient(
+    recipient_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin),
+) -> None:
     BackupService(db).delete_recipient(recipient_id)
 
 
 @router.get("/runs", response_model=PaginatedResponse[BackupRunRead])
 def list_runs(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
 ) -> PaginatedResponse[BackupRunRead]:
@@ -83,15 +122,23 @@ def list_runs(
     return PaginatedResponse(items=items, total=total, page=page, page_size=page_size)
 
 
-@router.post("/run", response_model=BackupRunRead, status_code=status.HTTP_202_ACCEPTED)
+@router.post(
+    "/settings/{settings_id}/run", response_model=BackupRunRead, status_code=status.HTTP_202_ACCEPTED
+)
 def run_backup_now(
-    db: Session = Depends(get_db), current_user: User = Depends(get_current_admin)
+    settings_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin),
 ) -> BackupRunRead:
-    return BackupService(db).trigger_backup_async(trigger="manual", user=current_user)
+    service = BackupService(db)
+    settings = service.get_settings(settings_id)
+    return service.trigger_backup_async(trigger="manual", user=current_user, settings=settings)
 
 
 @router.get("/runs/{run_id}/download")
-def download_run(run_id: int, db: Session = Depends(get_db)) -> FileResponse:
+def download_run(
+    run_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_admin)
+) -> FileResponse:
     file_path = BackupService(db).download_run(run_id)
     return FileResponse(file_path, filename=file_path.name, media_type="application/octet-stream")
 

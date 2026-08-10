@@ -7,24 +7,50 @@ import type {
   BackupRecipientInput,
   BackupRecipientUpdateInput,
   BackupRunListParams,
-  BackupSettingsInput,
+  BackupSettingsCreateInput,
+  BackupSettingsUpdateInput,
 } from '@/api/types'
 import { queryKeys } from '@/lib/query-keys'
 
-export function useBackupSettings() {
+export function useBackupSettingsList() {
   return useQuery({
     queryKey: queryKeys.backupSettings,
-    queryFn: () => backupsApi.getSettings(),
+    queryFn: () => backupsApi.listSettings(),
+  })
+}
+
+export function useCreateBackupSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: BackupSettingsCreateInput) => backupsApi.createSettings(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.backupSettings })
+      toast.success('Настройки резервного копирования созданы')
+    },
+    onError: (error: ApiError) => toast.error(error.message),
   })
 }
 
 export function useUpdateBackupSettings() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: BackupSettingsInput) => backupsApi.updateSettings(data),
+    mutationFn: ({ id, data }: { id: number; data: BackupSettingsUpdateInput }) =>
+      backupsApi.updateSettings(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.backupSettings })
       toast.success('Настройки резервного копирования сохранены')
+    },
+    onError: (error: ApiError) => toast.error(error.message),
+  })
+}
+
+export function useDeleteBackupSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => backupsApi.deleteSettings(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.backupSettings })
+      toast.success('Настройки резервного копирования удалены')
     },
     onError: (error: ApiError) => toast.error(error.message),
   })
@@ -89,7 +115,7 @@ export function useBackupRuns(params: BackupRunListParams) {
 export function useRunBackupNow() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => backupsApi.runNow(),
+    mutationFn: (settingsId: number) => backupsApi.runNow(settingsId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['backups', 'runs'] })
       toast.success('Резервное копирование запущено')

@@ -30,7 +30,8 @@ import type {
   BackupRun,
   BackupRunListParams,
   BackupSettings,
-  BackupSettingsInput,
+  BackupSettingsCreateInput,
+  BackupSettingsUpdateInput,
   ChangePasswordInput,
   DashboardSummary,
   EventCounter,
@@ -171,9 +172,12 @@ export const usersApi = {
 }
 
 export const backupsApi = {
-  getSettings: () => apiClient.get<BackupSettings>('/backups/settings'),
-  updateSettings: (data: BackupSettingsInput) =>
-    apiClient.put<BackupSettings>('/backups/settings', data),
+  listSettings: () => apiClient.get<BackupSettings[]>('/backups/settings'),
+  createSettings: (data: BackupSettingsCreateInput) =>
+    apiClient.post<BackupSettings>('/backups/settings', data),
+  updateSettings: (id: number, data: BackupSettingsUpdateInput) =>
+    apiClient.patch<BackupSettings>(`/backups/settings/${id}`, data),
+  deleteSettings: (id: number) => apiClient.delete<void>(`/backups/settings/${id}`),
   listRecipients: () => apiClient.get<BackupRecipient[]>('/backups/recipients'),
   createRecipient: (data: BackupRecipientInput) =>
     apiClient.post<BackupRecipient>('/backups/recipients', data),
@@ -184,7 +188,7 @@ export const backupsApi = {
     apiClient.get<PaginatedResponse<BackupRun>>(
       `/backups/runs${buildQuery({ page: params.page, page_size: params.page_size })}`
     ),
-  runNow: () => apiClient.post<BackupRun>('/backups/run'),
+  runNow: (settingsId: number) => apiClient.post<BackupRun>(`/backups/settings/${settingsId}/run`),
   downloadUrl: (id: number) => `${API_BASE_URL}/backups/runs/${id}/download`,
   import: (file: File, backupBeforeImport: boolean) => {
     const formData = new FormData()

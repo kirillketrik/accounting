@@ -1,10 +1,18 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Repo root .env: backend/app/core/config.py -> core -> app -> backend -> repo root.
+# In Docker, only backend/ is in the build context, so this path won't exist there and
+# config comes entirely from the container's environment (see docker-compose*.yml env_file).
+ROOT_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
+
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=ROOT_ENV_FILE, env_file_encoding="utf-8", extra="ignore"
+    )
 
     app_name: str = "Asset Management API"
     api_prefix: str = "/api"
@@ -20,6 +28,7 @@ class Settings(BaseSettings):
 
     backups_dir: str = "backups"
     backup_retention: int = 20
+    backup_credentials_key: str | None = None
     redis_url: str = "redis://localhost:6379/0"
 
 

@@ -9,6 +9,9 @@ class BackupSettingsRepository(BaseRepository[BackupSettings]):
     def __init__(self, db: Session) -> None:
         super().__init__(db, BackupSettings)
 
+    def list_enabled(self) -> list[BackupSettings]:
+        return list(self.db.scalars(select(BackupSettings).where(BackupSettings.enabled.is_(True))))
+
 
 class BackupRecipientRepository(BaseRepository[BackupRecipient]):
     def __init__(self, db: Session) -> None:

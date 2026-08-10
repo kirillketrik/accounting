@@ -358,18 +358,33 @@ export interface AuditLogListParams {
   page_size?: number
 }
 
+export type BackupSettingsType = 'telegram'
+
 export interface BackupSettings {
   id: number
+  name: string
+  type: BackupSettingsType
   enabled: boolean
   interval_hours: number | null
-  has_bot_token: boolean
+  has_credentials: boolean
   last_run_at: string | null
+  updated_at: string
 }
 
-export interface BackupSettingsInput {
+export interface BackupSettingsCreateInput {
+  name: string
+  type: BackupSettingsType
   enabled?: boolean
   interval_hours?: number | null
-  telegram_bot_token?: string | null
+  /** Opaque, transport-specific string produced by the type-specific creation form. */
+  credentials?: string | null
+}
+
+export interface BackupSettingsUpdateInput {
+  name?: string
+  enabled?: boolean
+  interval_hours?: number | null
+  credentials?: string | null
 }
 
 export interface BackupRecipient {
@@ -408,6 +423,7 @@ export interface BackupRun {
   error_message: string | null
   delivery_details: BackupDeliveryResult[]
   triggered_by_user_id: number | null
+  backup_settings_id: number | null
   created_at: string
 }
 

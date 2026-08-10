@@ -83,9 +83,10 @@ What each mode does:
 - **Prod** (`docker-compose.yml`) — builds the backend and frontend into optimized images
   (frontend served by nginx), runs Alembic migrations on boot, and persists the SQLite database
   in a named Docker volume (`backend_data`). The app is served on port 80 by default; set
-  `FRONTEND_PORT` (copy the root `.env.example` to `.env`) to use a different port. Once it's up,
-  the script prints both a `localhost` URL and a LAN URL so you can share the app with colleagues
-  on the same network.
+  `FRONTEND_PORT` (copy the root `.env.example` to `.env`) to use a different port. Both compose
+  files load that same root `.env` into the backend/celery/frontend containers via `env_file`, so
+  it's the single place to configure the whole stack. Once it's up, the script prints both a
+  `localhost` URL and a LAN URL so you can share the app with colleagues on the same network.
 - **Dev** (`docker-compose.dev.yml`) — bind-mounts `backend/` and `frontend/` into the containers
   and runs the FastAPI dev server and Vite dev server with hot reload, matching the manual setup
   below but without installing anything locally.
@@ -100,12 +101,17 @@ for dev mode). To reset the database, also remove the volume: `docker compose do
 - Python 3.12+ and [uv](https://docs.astral.sh/uv/)
 - Node.js 20+ and npm
 
+Both the backend and frontend read a single root-level `.env` (see `.env.example`):
+
+```bash
+cp .env.example .env           # optional, defaults already work
+```
+
 #### Backend
 
 ```bash
 cd backend
 uv sync                        # installs dependencies into .venv
-cp .env.example .env           # optional, defaults already work
 uv run alembic upgrade head    # create the SQLite database
 uv run uvicorn app.main:app --reload
 ```
@@ -118,7 +124,7 @@ The API is now running at `http://127.0.0.1:8000`.
 
 On first startup, the database is automatically seeded with sample asset types, event types, and
 demo assets/events (see `app/db/seed.py`). Seeding only runs if the `asset_types` table is empty,
-so it's safe to restart the server repeatedly. Set `SEED_ON_STARTUP=false` in `backend/.env` to
+so it's safe to restart the server repeatedly. Set `SEED_ON_STARTUP=false` in the root `.env` to
 disable this (this is the default in the prod Docker Compose setup).
 
 **Backups** (admin-only "Резервные копии" page) run on Celery, so exercising that feature outside
@@ -137,7 +143,6 @@ uv run celery -A app.celery_app beat --loglevel=info
 ```bash
 cd frontend
 npm install
-cp .env.example .env           # optional, defaults already work
 npm run dev
 ```
 
@@ -177,6 +182,6 @@ The system was designed to grow without major refactoring:
 - **Attachments, QR codes, auth, roles, notifications, scheduled maintenance**: the clean
   separation between API routes, services, repositories, and schemas keeps room to add these as
   new modules without touching existing ones.
-- **PostgreSQL**: swap the `DATABASE_URL` in `backend/.env` (e.g.
+- **PostgreSQL**: swap the `DATABASE_URL` in the root `.env` (e.g.
   `postgresql+psycopg://user:pass@host/db`) and install a Postgres driver — SQLAlchemy 2.x and
   Alembic already abstract over the database engine.

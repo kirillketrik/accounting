@@ -16,6 +16,9 @@ class TelegramBackupTransport(BackupTransport):
     def __init__(self, bot_token: str) -> None:
         self.bot_token = bot_token
 
+    def _redact(self, message: str) -> str:
+        return message.replace(self.bot_token, "***") if self.bot_token else message
+
     def send(self, file_path: Path, filename: str, recipients: list[str]) -> list[dict[str, Any]]:
         results: list[dict[str, Any]] = []
         url = f"{TELEGRAM_API_BASE}/bot{self.bot_token}/sendDocument"
@@ -34,6 +37,8 @@ class TelegramBackupTransport(BackupTransport):
                         raise RuntimeError(body.get("description", f"HTTP {response.status_code}"))
                     results.append({"chat_id": chat_id, "success": True, "error": None})
                 except Exception as exc:
-                    results.append({"chat_id": chat_id, "success": False, "error": str(exc)})
+                    results.append(
+                        {"chat_id": chat_id, "success": False, "error": self._redact(str(exc))}
+                    )
 
         return results

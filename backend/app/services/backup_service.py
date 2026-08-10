@@ -7,6 +7,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.crypto import decrypt_secret, encrypt_secret
 from app.core.exceptions import ConflictError, NotFoundError
 from app.models.backup import BackupRecipient, BackupRun, BackupSettings
 from app.models.user import User
@@ -15,8 +16,14 @@ from app.repositories.backup import (
     BackupRunRepository,
     BackupSettingsRepository,
 )
-from app.schemas.backup import BackupRecipientCreate, BackupRecipientUpdate, BackupSettingsUpdate
-from app.services.backup.telegram_transport import TelegramBackupTransport
+from app.schemas.backup import (
+    BackupRecipientCreate,
+    BackupRecipientUpdate,
+    BackupSettingsCreate,
+    BackupSettingsUpdate,
+)
+from app.services.backup.credentials import get_credential_codec
+from app.services.backup.factory import build_transport
 
 SQLITE_HEADER = b"SQLite format 3\x00"
 SQLITE_URL_PREFIX = "sqlite:///"
@@ -36,19 +43,42 @@ class BackupService:
 
     # -- settings --------------------------------------------------------
 
-    def get_settings(self) -> BackupSettings:
-        obj = self.settings_repo.get(1)
+    def list_settings(self) -> list[BackupSettings]:
+        return self.settings_repo.list()
+
+    def get_settings(self, id_: int) -> BackupSettings:
+        obj = self.settings_repo.get(id_)
         if obj is None:
-            obj = BackupSettings(id=1, enabled=False)
-            self.db.add(obj)
-            self.db.commit()
-            self.db.refresh(obj)
+            raise NotFoundError("BackupSettings", id_)
         return obj
 
-    def update_settings(self, data: BackupSettingsUpdate) -> BackupSettings:
-        obj = self.get_settings()
+    def create_settings(self, data: BackupSettingsCreate) -> BackupSettings:
+        encrypted = None
+        if data.credentials:
+            get_credential_codec(data.type).decode(data.credentials)
+            encrypted = encrypt_secret(data.credentials)
+        return self.settings_repo.create(
+            name=data.name,
+            type=data.type.value,
+            enabled=data.enabled,
+            interval_hours=data.interval_hours,
+            credentials=encrypted,
+        )
+
+    def update_settings(self, id_: int, data: BackupSettingsUpdate) -> BackupSettings:
+        obj = self.get_settings(id_)
         payload = data.model_dump(exclude_unset=True)
+        if "credentials" in payload:
+            raw = payload["credentials"]
+            payload["credentials"] = None
+            if raw is not None:
+                get_credential_codec(obj.type_enum).decode(raw)
+                payload["credentials"] = encrypt_secret(raw)
         return self.settings_repo.update(obj, **payload)
+
+    def delete_settings(self, id_: int) -> None:
+        obj = self.get_settings(id_)
+        self.settings_repo.delete(obj)
 
     # -- recipients --------------------------------------------------------
 
@@ -114,31 +144,32 @@ class BackupService:
 
     # -- run execution --------------------------------------------------------
 
-    def _perform_backup(self, run: BackupRun) -> BackupRun:
+    def _perform_backup(self, run: BackupRun, settings: BackupSettings | None) -> BackupRun:
         try:
             file_path = self.create_backup_file()
         except Exception as exc:
             return self.run_repo.update(run, status="failed", error_message=str(exc))
 
-        recipients = [r.chat_id for r in self.recipient_repo.list_active()]
-        settings = self.get_settings()
-
         delivery_details: list[dict] = []
         status = "success"
         error_message = None
 
-        if recipients:
-            if settings.telegram_bot_token:
-                transport = TelegramBackupTransport(settings.telegram_bot_token)
-                delivery_details = transport.send(file_path, file_path.name, recipients)
-                successes = [d for d in delivery_details if d["success"]]
-                if not successes:
+        if settings is not None:
+            recipients = [r.chat_id for r in self.recipient_repo.list_active()]
+            if recipients:
+                if settings.credentials:
+                    raw = decrypt_secret(settings.credentials)
+                    credentials = get_credential_codec(settings.type_enum).decode(raw)
+                    transport = build_transport(settings.type_enum, credentials)
+                    delivery_details = transport.send(file_path, file_path.name, recipients)
+                    successes = [d for d in delivery_details if d["success"]]
+                    if not successes:
+                        status = "failed"
+                    elif len(successes) < len(delivery_details):
+                        status = "partial"
+                else:
                     status = "failed"
-                elif len(successes) < len(delivery_details):
-                    status = "partial"
-            else:
-                status = "failed"
-                error_message = "Telegram bot token is not configured"
+                    error_message = f"Credentials are not configured for backup settings '{settings.name}'"
 
         updated = self.run_repo.update(
             run,
@@ -148,24 +179,29 @@ class BackupService:
             error_message=error_message,
             delivery_details=delivery_details,
         )
-        self.settings_repo.update(settings, last_run_at=datetime.utcnow())
+        if settings is not None:
+            self.settings_repo.update(settings, last_run_at=datetime.utcnow())
         return updated
 
-    def run_backup_sync(self, trigger: str, user: User | None) -> BackupRun:
+    def run_backup_sync(
+        self, trigger: str, user: User | None, settings: BackupSettings | None
+    ) -> BackupRun:
         run = self.run_repo.create(
             trigger=trigger,
             status="pending",
             triggered_by_user_id=user.id if user else None,
+            backup_settings_id=settings.id if settings else None,
         )
-        return self._perform_backup(run)
+        return self._perform_backup(run, settings)
 
-    def trigger_backup_async(self, trigger: str, user: User | None) -> BackupRun:
+    def trigger_backup_async(self, trigger: str, user: User | None, settings: BackupSettings) -> BackupRun:
         from app.services.backup.tasks import execute_backup_run
 
         run = self.run_repo.create(
             trigger=trigger,
             status="pending",
             triggered_by_user_id=user.id if user else None,
+            backup_settings_id=settings.id,
         )
         execute_backup_run.delay(run.id)
         return run
@@ -174,18 +210,20 @@ class BackupService:
         run = self.run_repo.get(run_id)
         if run is None:
             raise NotFoundError("BackupRun", run_id)
-        return self._perform_backup(run)
+        settings = self.settings_repo.get(run.backup_settings_id) if run.backup_settings_id else None
+        return self._perform_backup(run, settings)
 
-    def run_scheduled_if_due(self) -> BackupRun | None:
-        settings = self.get_settings()
-        if not settings.enabled or not settings.interval_hours:
-            return None
-        due = settings.last_run_at is None or datetime.utcnow() - settings.last_run_at >= timedelta(
-            hours=settings.interval_hours
-        )
-        if not due:
-            return None
-        return self.run_backup_sync(trigger="scheduled", user=None)
+    def run_scheduled_if_due(self) -> list[BackupRun]:
+        triggered: list[BackupRun] = []
+        for settings in self.settings_repo.list_enabled():
+            if not settings.interval_hours:
+                continue
+            due = settings.last_run_at is None or datetime.utcnow() - settings.last_run_at >= timedelta(
+                hours=settings.interval_hours
+            )
+            if due:
+                triggered.append(self.run_backup_sync(trigger="scheduled", user=None, settings=settings))
+        return triggered
 
     # -- runs --------------------------------------------------------
 
@@ -226,7 +264,9 @@ class BackupService:
 
         pre_backup_filename = None
         if backup_before_import:
-            pre_run = self.run_backup_sync(trigger="pre_import", user=user)
+            # Just a local safety snapshot ahead of overwriting the DB — not tied to any
+            # particular destination config, so no delivery is attempted here.
+            pre_run = self.run_backup_sync(trigger="pre_import", user=user, settings=None)
             if pre_run.file_name is None:
                 raise ConflictError(f"Pre-import backup failed, import aborted: {pre_run.error_message}")
             pre_backup_filename = pre_run.file_name

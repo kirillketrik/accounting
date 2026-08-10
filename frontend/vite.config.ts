@@ -5,6 +5,8 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Single root .env for the whole project instead of a separate frontend/.env.
+  envDir: path.resolve(import.meta.dirname, '..'),
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
