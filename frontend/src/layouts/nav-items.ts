@@ -6,6 +6,7 @@ import {
   ListTree,
   Flag,
   Archive,
+  DatabaseBackup,
   ScrollText,
   Settings,
   Users,
@@ -32,4 +33,5 @@ export const navItems: NavItem[] = [
   { label: 'Журнал действий', to: '/audit-log', icon: ScrollText },
   { label: 'Настройки', to: '/settings', icon: Settings },
   { label: 'Пользователи', to: '/users', icon: Users, adminOnly: true },
+  { label: 'Резервные копии', to: '/backups', icon: DatabaseBackup, adminOnly: true },
 ]

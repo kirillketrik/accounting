@@ -1,0 +1,1 @@
+The app need next features: db auto-export (backup). Create interface and then create first implementation backup throw telegram bot to certain telegram user_id or list of users. Only admin should have access to that settings. Also we need import db, of course we should ask admin if he wants to get latest backup before importing db.

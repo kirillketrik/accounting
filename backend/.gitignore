@@ -15,3 +15,7 @@ wheels/
 # SQLite database
 *.db
 
+# Local backups + celery beat schedule state
+/backups/
+celerybeat-schedule*
+

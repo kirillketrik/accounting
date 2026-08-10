@@ -3,6 +3,8 @@ __pycache__
 **/__pycache__
 *.py[cod]
 *.db
+backups/
+celerybeat-schedule*
 .env
 .git
 .pytest_cache

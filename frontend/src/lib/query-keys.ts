@@ -1,4 +1,9 @@
-import type { AssetHistoryListParams, AssetListParams, AuditLogListParams } from '@/api/types'
+import type {
+  AssetHistoryListParams,
+  AssetListParams,
+  AuditLogListParams,
+  BackupRunListParams,
+} from '@/api/types'
 
 export const queryKeys = {
   assetTypes: ['asset-types'] as const,
@@ -18,4 +23,7 @@ export const queryKeys = {
   settings: ['settings'] as const,
   authMe: ['auth', 'me'] as const,
   users: ['users'] as const,
+  backupSettings: ['backups', 'settings'] as const,
+  backupRecipients: ['backups', 'recipients'] as const,
+  backupRuns: (params: BackupRunListParams) => ['backups', 'runs', params] as const,
 }

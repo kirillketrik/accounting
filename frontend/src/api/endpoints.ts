@@ -1,4 +1,4 @@
-import { apiClient } from '@/api/client'
+import { API_BASE_URL, apiClient } from '@/api/client'
 import type {
   AppSettings,
   AppSettingsInput,
@@ -24,11 +24,19 @@ import type {
   AuditLog,
   AuditLogDetail,
   AuditLogListParams,
+  BackupRecipient,
+  BackupRecipientInput,
+  BackupRecipientUpdateInput,
+  BackupRun,
+  BackupRunListParams,
+  BackupSettings,
+  BackupSettingsInput,
   ChangePasswordInput,
   DashboardSummary,
   EventCounter,
   EventType,
   EventTypeInput,
+  ImportResult,
   LoginInput,
   PaginatedResponse,
   PasswordResetInput,
@@ -160,6 +168,30 @@ export const usersApi = {
   update: (id: number, data: UserUpdateInput) => apiClient.patch<User>(`/users/${id}`, data),
   resetPassword: (id: number, data: PasswordResetInput) =>
     apiClient.post<User>(`/users/${id}/reset-password`, data),
+}
+
+export const backupsApi = {
+  getSettings: () => apiClient.get<BackupSettings>('/backups/settings'),
+  updateSettings: (data: BackupSettingsInput) =>
+    apiClient.put<BackupSettings>('/backups/settings', data),
+  listRecipients: () => apiClient.get<BackupRecipient[]>('/backups/recipients'),
+  createRecipient: (data: BackupRecipientInput) =>
+    apiClient.post<BackupRecipient>('/backups/recipients', data),
+  updateRecipient: (id: number, data: BackupRecipientUpdateInput) =>
+    apiClient.patch<BackupRecipient>(`/backups/recipients/${id}`, data),
+  deleteRecipient: (id: number) => apiClient.delete<void>(`/backups/recipients/${id}`),
+  listRuns: (params: BackupRunListParams) =>
+    apiClient.get<PaginatedResponse<BackupRun>>(
+      `/backups/runs${buildQuery({ page: params.page, page_size: params.page_size })}`
+    ),
+  runNow: () => apiClient.post<BackupRun>('/backups/run'),
+  downloadUrl: (id: number) => `${API_BASE_URL}/backups/runs/${id}/download`,
+  import: (file: File, backupBeforeImport: boolean) => {
+    const formData = new FormData()
+    formData.set('file', file)
+    formData.set('backup_before_import', String(backupBeforeImport))
+    return apiClient.postForm<ImportResult>('/backups/import', formData)
+  },
 }
 
 export const auditLogsApi = {

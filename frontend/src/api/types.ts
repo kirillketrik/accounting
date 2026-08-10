@@ -357,3 +357,70 @@ export interface AuditLogListParams {
   page?: number
   page_size?: number
 }
+
+export interface BackupSettings {
+  id: number
+  enabled: boolean
+  interval_hours: number | null
+  has_bot_token: boolean
+  last_run_at: string | null
+}
+
+export interface BackupSettingsInput {
+  enabled?: boolean
+  interval_hours?: number | null
+  telegram_bot_token?: string | null
+}
+
+export interface BackupRecipient {
+  id: number
+  chat_id: string
+  label: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export interface BackupRecipientInput {
+  chat_id: string
+  label?: string | null
+}
+
+export interface BackupRecipientUpdateInput {
+  label?: string | null
+  is_active?: boolean
+}
+
+export type BackupRunTrigger = 'manual' | 'scheduled' | 'pre_import' | 'import'
+export type BackupRunStatus = 'pending' | 'success' | 'partial' | 'failed'
+
+export interface BackupDeliveryResult {
+  chat_id: string
+  success: boolean
+  error: string | null
+}
+
+export interface BackupRun {
+  id: number
+  trigger: BackupRunTrigger
+  status: BackupRunStatus
+  file_name: string | null
+  file_size: number | null
+  error_message: string | null
+  delivery_details: BackupDeliveryResult[]
+  triggered_by_user_id: number | null
+  created_at: string
+}
+
+export interface BackupRunListParams {
+  page?: number
+  page_size?: number
+}
+
+export interface ImportDatabaseInput {
+  file: File
+  backup_before_import: boolean
+}
+
+export interface ImportResult {
+  pre_backup_filename: string | null
+}

@@ -121,6 +121,17 @@ demo assets/events (see `app/db/seed.py`). Seeding only runs if the `asset_types
 so it's safe to restart the server repeatedly. Set `SEED_ON_STARTUP=false` in `backend/.env` to
 disable this (this is the default in the prod Docker Compose setup).
 
+**Backups** (admin-only "Резервные копии" page) run on Celery, so exercising that feature outside
+Docker needs a running Redis instance plus a worker and beat process, in separate terminals:
+
+```bash
+redis-server                                                  # or: docker run --rm -p 6379:6379 redis:7-alpine
+uv run celery -A app.celery_app worker --loglevel=info
+uv run celery -A app.celery_app beat --loglevel=info
+```
+
+`./start.sh dev` (below) already wires all of this up, so this is only needed for the manual setup.
+
 #### Frontend
 
 ```bash
@@ -144,6 +155,7 @@ All endpoints are served under the `/api` prefix.
 | Assets       | `GET/POST /assets`, `GET/PUT/DELETE /assets/{id}` (list supports `search`, `status`, `asset_type_id`, `sort_by`, `sort_dir`, `page`, `page_size`) |
 | Events       | `GET/POST /assets/{id}/events`, `PUT/DELETE /events/{id}` |
 | Dashboard    | `GET /dashboard/summary` |
+| Backups (admin-only) | `GET/PUT /backups/settings`, `GET/POST /backups/recipients`, `PATCH/DELETE /backups/recipients/{id}`, `GET /backups/runs`, `POST /backups/run`, `GET /backups/runs/{id}/download`, `POST /backups/import` |
 
 Full interactive documentation is available at `/docs` while the backend is running.
 

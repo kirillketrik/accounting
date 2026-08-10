@@ -12,6 +12,7 @@ import { AssetTypesPage } from '@/routes/AssetTypesPage'
 import { AssetsPage } from '@/routes/AssetsPage'
 import { AuditLogDetailPage } from '@/routes/AuditLogDetailPage'
 import { AuditLogPage } from '@/routes/AuditLogPage'
+import { BackupsPage } from '@/routes/BackupsPage'
 import { DashboardPage } from '@/routes/DashboardPage'
 import { EventTypesPage } from '@/routes/EventTypesPage'
 import { NotFoundPage } from '@/routes/NotFoundPage'
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
           { path: 'audit-log/:id', element: <AuditLogDetailPage /> },
           { path: 'settings', element: <SettingsPage /> },
           { path: 'users', element: <UsersPage /> },
+          { path: 'backups', element: <BackupsPage /> },
           { path: '*', element: <NotFoundPage /> },
         ],
       },

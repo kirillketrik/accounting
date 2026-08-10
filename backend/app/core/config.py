@@ -18,6 +18,10 @@ class Settings(BaseSettings):
     seed_admin_username: str = "vlad_rak"
     seed_admin_password: str | None = None
 
+    backups_dir: str = "backups"
+    backup_retention: int = 20
+    redis_url: str = "redis://localhost:6379/0"
+
 
 @lru_cache
 def get_settings() -> Settings:

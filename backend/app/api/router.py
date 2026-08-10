@@ -9,6 +9,7 @@ from app.api.routes import (
     assets,
     audit_logs,
     auth,
+    backups,
     dashboard,
     event_types,
     events,
@@ -31,3 +32,4 @@ api_router.include_router(asset_history.router, dependencies=[Depends(get_curren
 api_router.include_router(audit_logs.router, dependencies=[Depends(get_current_user)])
 api_router.include_router(settings.router, dependencies=[Depends(get_current_user)])
 api_router.include_router(users.router, dependencies=[Depends(get_current_admin)])
+api_router.include_router(backups.router, dependencies=[Depends(get_current_admin)])
