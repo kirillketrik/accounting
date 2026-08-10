@@ -37,6 +37,11 @@ if errorlevel 1 (
 
 cd /d "%~dp0"
 
+if not exist ".env" (
+    echo .env not found - creating it from .env.example ^(defaults already work^)...
+    copy /y .env.example .env >nul
+)
+
 if /I "%MODE%"=="dev" (
     docker compose -f docker-compose.dev.yml up --build
 ) else (

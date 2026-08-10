@@ -50,6 +50,11 @@ fi
 
 cd "$(dirname "$0")"
 
+if [ ! -f .env ]; then
+    echo ".env not found — creating it from .env.example (defaults already work)..."
+    cp .env.example .env
+fi
+
 get_lan_ip() {
     if command -v hostname >/dev/null 2>&1 && hostname -I >/dev/null 2>&1; then
         hostname -I | awk '{print $1}'

@@ -39,6 +39,7 @@ frontend/
 
 docker-compose.yml       # prod: nginx + built frontend, migrations run on boot
 docker-compose.dev.yml   # dev: hot reload for both backend and frontend
+install.sh / install.ps1 # one-line installer: clones the repo, then runs start.sh / start.bat
 start.sh / start.bat     # installs Docker if needed, then runs one of the compose files
 ```
 
@@ -57,15 +58,48 @@ throughout the app, with no redeploy required.
 
 ## Installation
 
-### Option A: Docker (recommended)
+### Option A: One-line install (recommended)
 
-This is the easiest way to run the app — no Python or Node.js required on the host. The
-`start.sh` / `start.bat` scripts will even install Docker for you if it's missing.
+A single command clones the repo, installs Git/Docker if either is missing, and starts the app —
+nothing needs to be pre-installed.
+
+**Linux / macOS:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kirillketrik/accounting/main/install.sh | bash
+```
+
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/kirillketrik/accounting/main/install.ps1 | iex
+```
+
+Both default to production mode (nginx + built frontend on http://localhost, port 80). For dev
+mode (hot reload on :5173 / :8000):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kirillketrik/accounting/main/install.sh | bash -s dev
+```
+
+```powershell
+&([scriptblock]::Create((irm https://raw.githubusercontent.com/kirillketrik/accounting/main/install.ps1))) dev
+```
+
+The app is installed into `~/accounting` (Linux/macOS) or `%USERPROFILE%\accounting` (Windows);
+set `ACCOUNTING_DIR` / `$env:ACCOUNTING_DIR` before running to choose a different location.
+Re-running the same command later pulls the latest changes and restarts the app.
+
+### Option B: Clone + start scripts
+
+If you already have the repo cloned, use `start.sh` / `start.bat` directly (this is what the
+one-line installers call under the hood):
 
 **Linux / macOS:**
 
 ```bash
 git clone https://github.com/kirillketrik/accounting.git
+cd accounting
 ./start.sh          # production mode: nginx + built frontend on http://localhost (port 80)
 ./start.sh dev       # development mode: hot reload on :5173 (frontend) and :8000 (backend)
 ```
@@ -74,6 +108,7 @@ git clone https://github.com/kirillketrik/accounting.git
 
 ```bat
 git clone https://github.com/kirillketrik/accounting.git
+cd accounting
 start.bat            :: production mode: nginx + built frontend on http://localhost (port 80)
 start.bat dev         :: development mode: hot reload on :5173 (frontend) and :8000 (backend)
 ```
@@ -94,7 +129,7 @@ What each mode does:
 To stop the app, run `docker compose -f docker-compose.yml down` (add `-f docker-compose.dev.yml`
 for dev mode). To reset the database, also remove the volume: `docker compose down -v`.
 
-### Option B: Manual setup
+### Option C: Manual setup
 
 #### Prerequisites
 
