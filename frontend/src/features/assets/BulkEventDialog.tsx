@@ -30,7 +30,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 
+import { useAssetTypes } from '@/features/asset-types/hooks'
 import { useEventTypes } from '@/features/event-types/hooks'
 import { useBulkCreateEvents } from '@/features/assets/event-hooks'
 import { useSettings } from '@/features/settings/hooks'
@@ -62,6 +64,7 @@ interface BulkEventDialogProps {
 
 export function BulkEventDialog({ open, onOpenChange }: BulkEventDialogProps) {
   const { data: eventTypes } = useEventTypes()
+  const { data: assetTypes } = useAssetTypes()
   const { data: settings } = useSettings()
   const bulkCreate = useBulkCreateEvents()
 
@@ -73,6 +76,7 @@ export function BulkEventDialog({ open, onOpenChange }: BulkEventDialogProps) {
     resolver: zodResolver(bulkEventFormSchema),
     defaultValues: {
       event_type_id: 0,
+      asset_type_id: 0,
       event_date: nowLocalIso(),
       description: '',
       separator: DEFAULT_SEPARATOR,
@@ -85,6 +89,7 @@ export function BulkEventDialog({ open, onOpenChange }: BulkEventDialogProps) {
     const separator = settings?.default_bulk_event_separator || DEFAULT_SEPARATOR
     form.reset({
       event_type_id: 0,
+      asset_type_id: 0,
       event_date: nowLocalIso(),
       description: '',
       separator,
@@ -130,6 +135,7 @@ export function BulkEventDialog({ open, onOpenChange }: BulkEventDialogProps) {
   async function onSubmit(values: BulkEventFormValues) {
     const result = await bulkCreate.mutateAsync({
       event_type_id: values.event_type_id,
+      asset_type_id: values.asset_type_id,
       event_date: values.event_date,
       description: values.description || null,
       inventory_numbers: inventoryNumbers,
@@ -184,6 +190,33 @@ export function BulkEventDialog({ open, onOpenChange }: BulkEventDialogProps) {
                       Списанные активы будут перемещены в Историю.
                     </FormDescription>
                   )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="asset_type_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Тип актива</FormLabel>
+                  <FormControl>
+                    <SearchableSelect
+                      items={(assetTypes ?? []).map((type) => ({
+                        value: String(type.id),
+                        label: type.name,
+                      }))}
+                      value={field.value ? String(field.value) : undefined}
+                      onValueChange={(value) => field.onChange(value ? Number(value) : undefined)}
+                      placeholder="Выберите тип актива"
+                      searchPlaceholder="Поиск типа актива..."
+                      emptyMessage="Типы активов не найдены"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Инвентарные номера уникальны только в пределах одного типа актива.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

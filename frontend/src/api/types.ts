@@ -288,6 +288,7 @@ export interface AssetBulkResult {
 
 export interface AssetEventBulkCreateInput {
   event_type_id: number
+  asset_type_id: number
   event_date: string
   description?: string | null
   inventory_numbers: string[]

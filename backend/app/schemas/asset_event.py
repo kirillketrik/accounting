@@ -37,6 +37,7 @@ class AssetEventWithType(AssetEventRead):
 
 class AssetEventBulkCreate(BaseModel):
     event_type_id: int
+    asset_type_id: int
     event_date: datetime
     description: str | None = None
     inventory_numbers: list[str] = Field(min_length=1)

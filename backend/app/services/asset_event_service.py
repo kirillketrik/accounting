@@ -7,6 +7,7 @@ from app.models.user import User
 from app.repositories.asset import AssetRepository
 from app.repositories.asset_event import AssetEventRepository
 from app.repositories.asset_history import AssetHistoryRepository
+from app.repositories.asset_type import AssetTypeRepository
 from app.repositories.event_type import EventTypeRepository
 from app.schemas.asset_event import (
     AssetEventBulkCreate,
@@ -37,6 +38,7 @@ class AssetEventService:
     def __init__(self, db: Session) -> None:
         self.repo = AssetEventRepository(db)
         self.asset_repo = AssetRepository(db)
+        self.asset_type_repo = AssetTypeRepository(db)
         self.event_type_repo = EventTypeRepository(db)
         self.history_repo = AssetHistoryRepository(db)
         self.audit = AuditLogService(db)
@@ -48,6 +50,10 @@ class AssetEventService:
     def _ensure_event_type_exists(self, event_type_id: int) -> None:
         if self.event_type_repo.get(event_type_id) is None:
             raise NotFoundError("EventType", event_type_id)
+
+    def _ensure_asset_type_exists(self, asset_type_id: int) -> None:
+        if self.asset_type_repo.get(asset_type_id) is None:
+            raise NotFoundError("AssetType", asset_type_id)
 
     def list_for_asset(self, asset_id: int) -> list[AssetEvent]:
         self._ensure_asset_exists(asset_id)
@@ -133,32 +139,21 @@ class AssetEventService:
         self, data: AssetEventBulkCreate, current_user: User
     ) -> AssetEventBulkResult:
         self._ensure_event_type_exists(data.event_type_id)
+        self._ensure_asset_type_exists(data.asset_type_id)
 
         created: list[AssetEventBulkCreated] = []
         errors: list[AssetEventBulkError] = []
 
         for inv in data.inventory_numbers:
-            matches = self.asset_repo.list_by_inventory_number(inv)
-            if not matches:
+            asset = self.asset_repo.get_by_inventory_number_and_type(inv, data.asset_type_id)
+            if asset is None:
                 errors.append(
                     AssetEventBulkError(
                         inventory_number=inv,
-                        message="Актив с таким инвентарным номером не найден",
+                        message="Актив с таким инвентарным номером не найден для выбранного типа",
                     )
                 )
                 continue
-            if len(matches) > 1:
-                errors.append(
-                    AssetEventBulkError(
-                        inventory_number=inv,
-                        message=(
-                            "Найдено несколько активов с таким инвентарным номером "
-                            "в разных типах активов — уточните вручную"
-                        ),
-                    )
-                )
-                continue
-            asset = matches[0]
 
             asset_name_before = asset.name
             event_payload = AssetEventCreate(

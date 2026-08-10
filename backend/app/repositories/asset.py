@@ -44,15 +44,6 @@ class AssetRepository(BaseRepository[Asset]):
         )
         return [value for value in self.db.scalars(stmt) if value]
 
-    def list_by_inventory_number(self, inventory_number: str) -> list[Asset]:
-        """Inventory numbers are only unique within an asset type, so this can match more than one asset."""
-        stmt = (
-            select(Asset)
-            .options(joinedload(Asset.asset_type))
-            .where(Asset.inventory_number == inventory_number)
-        )
-        return list(self.db.scalars(stmt).unique())
-
     def search(
         self,
         *,
