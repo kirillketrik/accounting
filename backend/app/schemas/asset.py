@@ -11,7 +11,7 @@ from app.schemas.user import UserSummary
 class AssetBase(BaseModel):
     asset_type_id: int
     name: str | None = Field(default=None, max_length=200)
-    inventory_number: str | None = Field(default=None, max_length=100)
+    inventory_number: int | None = Field(default=None, ge=0)
     serial_number: str | None = Field(default=None, max_length=100)
     status_id: int | None = None
     place_id: int | None = None
@@ -25,7 +25,7 @@ class AssetCreate(AssetBase):
 class AssetUpdate(BaseModel):
     asset_type_id: int | None = None
     name: str | None = Field(default=None, max_length=200)
-    inventory_number: str | None = Field(default=None, max_length=100)
+    inventory_number: int | None = Field(default=None, ge=0)
     serial_number: str | None = Field(default=None, max_length=100)
     status_id: int | None = None
     place_id: int | None = None
@@ -51,7 +51,7 @@ class AssetWithType(AssetRead):
 
 class AssetBulkItem(BaseModel):
     name: str | None = Field(default=None, max_length=200)
-    inventory_number: str | None = Field(default=None, max_length=100)
+    inventory_number: int | None = Field(default=None, ge=0)
     serial_number: str | None = Field(default=None, max_length=100)
 
 
@@ -68,6 +68,23 @@ class AssetBulkError(BaseModel):
 class AssetBulkResult(BaseModel):
     created: list[AssetWithType]
     errors: list[AssetBulkError]
+
+
+class AssetBulkPreviewItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    index: int
+    name: str
+    inventory_number: int | None
+    serial_number: str | None
+    asset_type: AssetTypeRead
+    status: AssetStatusRead
+    responsible_user: UserSummary | None
+    error: str | None = None
+
+
+class AssetBulkPreviewResult(BaseModel):
+    items: list[AssetBulkPreviewItem]
 
 
 class AssetBulkDeleteRequest(BaseModel):

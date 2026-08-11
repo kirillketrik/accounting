@@ -73,6 +73,15 @@ export function useBulkCreateAssets() {
   })
 }
 
+export function useBulkPreviewAssets(payload: AssetBulkCreateInput | null) {
+  return useQuery({
+    queryKey: queryKeys.assetBulkPreview(payload ?? { asset_type_id: 0, items: [] }),
+    queryFn: () => assetsApi.bulkPreview(payload!),
+    enabled: payload !== null,
+    placeholderData: (prev) => prev,
+  })
+}
+
 export function useDeleteAsset() {
   const queryClient = useQueryClient()
   return useMutation({

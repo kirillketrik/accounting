@@ -17,7 +17,7 @@ class AssetHistoryRead(BaseModel):
     id: int
     asset_name: str
     asset_type_name: str
-    inventory_number: str | None
+    inventory_number: int | None
     serial_number: str | None
     place_name: str | None
     responsible_person: str | None

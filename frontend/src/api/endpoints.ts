@@ -5,9 +5,12 @@ import type {
   Asset,
   AssetBulkCreateInput,
   AssetBulkDeleteResult,
+  AssetBulkPreviewResult,
   AssetBulkResult,
   AssetEvent,
-  AssetEventBulkCreateInput,
+  AssetEventBulkApplyInput,
+  AssetEventBulkPreviewResult,
+  AssetEventBulkResolveInput,
   AssetEventBulkResult,
   AssetEventInput,
   AssetExportParams,
@@ -117,6 +120,8 @@ export const assetsApi = {
   delete: (id: number) => apiClient.delete<void>(`/assets/${id}`),
   bulkCreate: (data: AssetBulkCreateInput) =>
     apiClient.post<AssetBulkResult>('/assets/bulk', data),
+  bulkPreview: (data: AssetBulkCreateInput) =>
+    apiClient.post<AssetBulkPreviewResult>('/assets/bulk/preview', data),
   bulkDelete: (ids: number[]) =>
     apiClient.post<AssetBulkDeleteResult>('/assets/bulk-delete', { ids }),
   export: (params: AssetExportParams) =>
@@ -133,8 +138,10 @@ export const assetsApi = {
 export const eventsApi = {
   update: (id: number, data: AssetEventInput) => apiClient.put<AssetEvent>(`/events/${id}`, data),
   delete: (id: number) => apiClient.delete<void>(`/events/${id}`),
-  bulkCreate: (data: AssetEventBulkCreateInput) =>
+  bulkApply: (data: AssetEventBulkApplyInput) =>
     apiClient.post<AssetEventBulkResult>('/events/bulk', data),
+  bulkPreview: (data: AssetEventBulkResolveInput) =>
+    apiClient.post<AssetEventBulkPreviewResult>('/events/bulk/preview', data),
 }
 
 export const settingsApi = {
@@ -178,9 +185,10 @@ export const backupsApi = {
   updateSettings: (id: number, data: BackupSettingsUpdateInput) =>
     apiClient.patch<BackupSettings>(`/backups/settings/${id}`, data),
   deleteSettings: (id: number) => apiClient.delete<void>(`/backups/settings/${id}`),
-  listRecipients: () => apiClient.get<BackupRecipient[]>('/backups/recipients'),
-  createRecipient: (data: BackupRecipientInput) =>
-    apiClient.post<BackupRecipient>('/backups/recipients', data),
+  listRecipients: (settingsId: number) =>
+    apiClient.get<BackupRecipient[]>(`/backups/settings/${settingsId}/recipients`),
+  createRecipient: (settingsId: number, data: BackupRecipientInput) =>
+    apiClient.post<BackupRecipient>(`/backups/settings/${settingsId}/recipients`, data),
   updateRecipient: (id: number, data: BackupRecipientUpdateInput) =>
     apiClient.patch<BackupRecipient>(`/backups/recipients/${id}`, data),
   deleteRecipient: (id: number) => apiClient.delete<void>(`/backups/recipients/${id}`),

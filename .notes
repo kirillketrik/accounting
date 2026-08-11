@@ -1,1 +1,5 @@
-The app need next features: db auto-export (backup). Create interface and then create first implementation backup throw telegram bot to certain telegram user_id or list of users. Only admin should have access to that settings. Also we need import db, of course we should ask admin if he wants to get latest backup before importing db.
+                        Move profile button from upper right corner to the bottom of the navbar, after "Админка". Left only fullname there.
+                        Also create page for profile management, changing first and last name, changing password.
+                        - Профиль
+                        -- Редактировать (link to our new page)
+                        -- Выйти (just logout after dialog ensureance)

@@ -60,7 +60,9 @@ function runDetails(run: BackupRun) {
   const failedRecipients = run.delivery_details.filter((d) => !d.success)
   if (failedRecipients.length > 0) {
     parts.push(
-      failedRecipients.map((d) => `${d.chat_id}: ${d.error ?? 'ошибка отправки'}`).join('; ')
+      failedRecipients
+        .map((d) => `${d.recipient_identifier}: ${d.error ?? 'ошибка отправки'}`)
+        .join('; ')
     )
   }
   return parts.join(' — ') || null

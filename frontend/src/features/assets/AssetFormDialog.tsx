@@ -44,7 +44,7 @@ function assetToFormValues(asset: Asset): AssetFormValues {
   return {
     asset_type_id: asset.asset_type_id,
     name: asset.name,
-    inventory_number: asset.inventory_number ?? '',
+    inventory_number: asset.inventory_number != null ? String(asset.inventory_number) : '',
     serial_number: asset.serial_number ?? '',
     place_id: asset.place_id ?? undefined,
     notes: asset.notes ?? '',
@@ -82,7 +82,7 @@ export function AssetFormDialog({ open, onOpenChange, asset }: AssetFormDialogPr
     const payload = {
       asset_type_id: values.asset_type_id,
       name: values.name || null,
-      inventory_number: values.inventory_number || null,
+      inventory_number: values.inventory_number ? Number(values.inventory_number) : null,
       serial_number: values.serial_number || null,
       place_id: values.place_id ?? null,
       notes: values.notes || null,
@@ -167,9 +167,14 @@ export function AssetFormDialog({ open, onOpenChange, asset }: AssetFormDialogPr
                 name="inventory_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Инвентарный номер (необязательно)</FormLabel>
+                    <FormLabel>Инвентарный номер</FormLabel>
                     <FormControl>
-                      <Input placeholder="Автоматически, если оставить пустым" {...field} />
+                      <Input
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        placeholder="Автоматически, если оставить пустым"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

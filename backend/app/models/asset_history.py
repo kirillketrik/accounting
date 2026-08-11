@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, String, Text
+from sqlalchemy import JSON, DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -21,7 +21,7 @@ class AssetHistory(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     asset_name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     asset_type_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    inventory_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    inventory_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     serial_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     place_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     responsible_person: Mapped[str | None] = mapped_column(String(200), nullable=True)

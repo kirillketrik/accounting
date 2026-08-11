@@ -17,6 +17,6 @@ class BackupTransport(ABC):
         """Deliver the backup file to each recipient.
 
         Returns one result per recipient, shaped as
-        {"chat_id": str, "success": bool, "error": str | None}, so it can be
-        stored directly as BackupRun.delivery_details.
+        {"recipient_identifier": str, "success": bool, "error": str | None}, so it
+        can be stored directly as BackupRun.delivery_details.
         """

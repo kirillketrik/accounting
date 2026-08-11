@@ -105,7 +105,7 @@ def seed_if_empty(db: Session) -> None:
         Asset(
             asset_type=asset_types["Картридж"],
             name="Canon 728 Toner",
-            inventory_number="INV-1001",
+            inventory_number=1001,
             serial_number="SN-CN-9931",
             status=statuses["Используется"],
             place=places["2 этаж - Бухгалтерия"],
@@ -115,7 +115,7 @@ def seed_if_empty(db: Session) -> None:
         Asset(
             asset_type=asset_types["Картридж"],
             name="HP 26A Toner",
-            inventory_number="INV-1002",
+            inventory_number=1002,
             serial_number="SN-HP-2260",
             status=statuses["На заправке"],
             place=places["Сервисный центр PrintCare"],
@@ -125,7 +125,7 @@ def seed_if_empty(db: Session) -> None:
         Asset(
             asset_type=asset_types["Картридж"],
             name="Xerox 106R Toner",
-            inventory_number="INV-1003",
+            inventory_number=1003,
             serial_number="SN-XR-1188",
             status=statuses["На складе"],
             place=places["Склад"],
@@ -172,7 +172,7 @@ def seed_if_empty(db: Session) -> None:
     disposed_history = AssetHistory(
         asset_name="Brother TN-2420 Toner",
         asset_type_name="Картридж",
-        inventory_number="INV-0900",
+        inventory_number=900,
         serial_number="SN-BR-3345",
         place_name="Хранилище",
         responsible_person="Омер Леви",

@@ -22,21 +22,23 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 
-import type { BackupRecipient } from '@/api/types'
+import type { BackupRecipient, BackupSettingsType } from '@/api/types'
 import {
   recipientFormSchema,
   type RecipientFormValues,
 } from '@/features/backups/backup-schema'
+import { BACKUP_RECIPIENT_IDENTIFIER_HINTS } from '@/features/backups/backup-settings-types'
 
-const EMPTY_VALUES: RecipientFormValues = { chat_id: '', label: '' }
+const EMPTY_VALUES: RecipientFormValues = { recipient_identifier: '', label: '' }
 
 function recipientToFormValues(recipient: BackupRecipient): RecipientFormValues {
-  return { chat_id: recipient.chat_id, label: recipient.label ?? '' }
+  return { recipient_identifier: recipient.recipient_identifier, label: recipient.label ?? '' }
 }
 
 interface RecipientFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  settingsType: BackupSettingsType
   recipient?: BackupRecipient
   isSubmitting: boolean
   onSubmit: (values: RecipientFormValues) => Promise<unknown>
@@ -45,11 +47,13 @@ interface RecipientFormDialogProps {
 export function RecipientFormDialog({
   open,
   onOpenChange,
+  settingsType,
   recipient,
   isSubmitting,
   onSubmit,
 }: RecipientFormDialogProps) {
   const isEdit = !!recipient
+  const hint = BACKUP_RECIPIENT_IDENTIFIER_HINTS[settingsType]
 
   const form = useForm<RecipientFormValues>({
     resolver: zodResolver(recipientFormSchema),
@@ -74,8 +78,7 @@ export function RecipientFormDialog({
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Изменить получателя' : 'Добавить получателя'}</DialogTitle>
           <DialogDescription>
-            Резервные копии будут отправляться этому Telegram chat_id ботом, указанным в
-            настройках.
+            Резервные копии будут отправляться этому получателю через выбранное назначение.
           </DialogDescription>
         </DialogHeader>
 
@@ -83,16 +86,19 @@ export function RecipientFormDialog({
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="chat_id"
+              name="recipient_identifier"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Chat ID</FormLabel>
+                  <FormLabel>{hint.label}</FormLabel>
                   <FormControl>
-                    <Input placeholder="123456789" autoComplete="off" {...field} disabled={isEdit} />
+                    <Input
+                      placeholder={hint.placeholder}
+                      autoComplete="off"
+                      {...field}
+                      disabled={isEdit}
+                    />
                   </FormControl>
-                  <FormDescription>
-                    Узнать свой chat_id можно у бота @userinfobot в Telegram.
-                  </FormDescription>
+                  <FormDescription>{hint.description}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

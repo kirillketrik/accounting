@@ -9,6 +9,7 @@ from app.schemas.asset import (
     AssetBulkCreate,
     AssetBulkDeleteRequest,
     AssetBulkDeleteResult,
+    AssetBulkPreviewResult,
     AssetBulkResult,
     AssetCreate,
     AssetUpdate,
@@ -67,6 +68,15 @@ def bulk_create_assets(
     current_user: User = Depends(get_current_user),
 ) -> AssetBulkResult:
     return AssetService(db).bulk_create(payload, current_user)
+
+
+@router.post("/bulk/preview", response_model=AssetBulkPreviewResult)
+def preview_bulk_create_assets(
+    payload: AssetBulkCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> AssetBulkPreviewResult:
+    return AssetService(db).bulk_preview(payload, current_user)
 
 
 @router.post("/bulk-delete", response_model=AssetBulkDeleteResult)

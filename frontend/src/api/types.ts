@@ -120,7 +120,7 @@ export interface Asset {
   id: number
   asset_type_id: number
   name: string
-  inventory_number: string | null
+  inventory_number: number | null
   serial_number: string | null
   status_id: number
   status: AssetStatus
@@ -136,7 +136,7 @@ export interface Asset {
 export interface AssetInput {
   asset_type_id: number
   name?: string | null
-  inventory_number?: string | null
+  inventory_number?: number | null
   serial_number?: string | null
   status_id?: number | null
   place_id?: number | null
@@ -179,7 +179,7 @@ export interface AssetHistory {
   id: number
   asset_name: string
   asset_type_name: string
-  inventory_number: string | null
+  inventory_number: number | null
   serial_number: string | null
   place_name: string | null
   responsible_person: string | null
@@ -267,7 +267,7 @@ export interface AssetExportParams {
 
 export interface AssetBulkItem {
   name?: string | null
-  inventory_number?: string | null
+  inventory_number?: number | null
   serial_number?: string | null
 }
 
@@ -286,28 +286,60 @@ export interface AssetBulkResult {
   errors: AssetBulkError[]
 }
 
-export interface AssetEventBulkCreateInput {
+export interface AssetEventBulkResolveInput {
+  asset_ids: number[]
+  inventory_numbers: number[]
+}
+
+export interface AssetEventBulkApplyInput extends AssetEventBulkResolveInput {
   event_type_id: number
-  asset_type_id: number
   event_date: string
   description?: string | null
-  inventory_numbers: string[]
 }
 
 export interface AssetEventBulkCreated {
-  inventory_number: string
+  asset_id: number
   asset_name: string
+  inventory_number: number | null
   event: AssetEvent
 }
 
 export interface AssetEventBulkError {
-  inventory_number: string
+  inventory_number: number
   message: string
 }
 
 export interface AssetEventBulkResult {
   created: AssetEventBulkCreated[]
   errors: AssetEventBulkError[]
+}
+
+export interface AssetEventBulkPreviewItem {
+  asset_id: number
+  asset_name: string
+  asset_type: AssetType
+  inventory_number: number | null
+  status: AssetStatus
+}
+
+export interface AssetEventBulkPreviewResult {
+  items: AssetEventBulkPreviewItem[]
+  not_found: number[]
+}
+
+export interface AssetBulkPreviewItem {
+  index: number
+  name: string
+  inventory_number: number | null
+  serial_number: string | null
+  asset_type: AssetType
+  status: AssetStatus
+  responsible_user: UserSummary | null
+  error: string | null
+}
+
+export interface AssetBulkPreviewResult {
+  items: AssetBulkPreviewItem[]
 }
 
 export interface AssetBulkDeleteError {
@@ -390,14 +422,15 @@ export interface BackupSettingsUpdateInput {
 
 export interface BackupRecipient {
   id: number
-  chat_id: string
+  backup_settings_id: number
+  recipient_identifier: string
   label: string | null
   is_active: boolean
   created_at: string
 }
 
 export interface BackupRecipientInput {
-  chat_id: string
+  recipient_identifier: string
   label?: string | null
 }
 
@@ -410,7 +443,7 @@ export type BackupRunTrigger = 'manual' | 'scheduled' | 'pre_import' | 'import'
 export type BackupRunStatus = 'pending' | 'success' | 'partial' | 'failed'
 
 export interface BackupDeliveryResult {
-  chat_id: string
+  recipient_identifier: string
   success: boolean
   error: string | null
 }

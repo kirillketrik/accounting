@@ -35,10 +35,14 @@ class TelegramBackupTransport(BackupTransport):
                     body = response.json()
                     if not response.is_success or not body.get("ok"):
                         raise RuntimeError(body.get("description", f"HTTP {response.status_code}"))
-                    results.append({"chat_id": chat_id, "success": True, "error": None})
+                    results.append({"recipient_identifier": chat_id, "success": True, "error": None})
                 except Exception as exc:
                     results.append(
-                        {"chat_id": chat_id, "success": False, "error": self._redact(str(exc))}
+                        {
+                            "recipient_identifier": chat_id,
+                            "success": False,
+                            "error": self._redact(str(exc)),
+                        }
                     )
 
         return results

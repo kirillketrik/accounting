@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 
 import { useAuth } from '@/features/auth/useAuth'
 import { BackupSettingsSection } from '@/features/backups/BackupSettingsSection'
-import { RecipientsSection } from '@/features/backups/RecipientsSection'
 import { BackupRunsTable } from '@/features/backups/BackupRunsTable'
 import { ImportDatabaseDialog } from '@/features/backups/ImportDatabaseDialog'
 
@@ -24,7 +23,7 @@ export function BackupsPage() {
         <div>
           <h2 className="text-2xl font-semibold tracking-tight">Резервные копии</h2>
           <p className="text-muted-foreground">
-            Автоматическая отправка резервных копий базы данных в Telegram и импорт базы из
+            Автоматическая отправка резервных копий базы данных получателям и импорт базы из
             файла.
           </p>
         </div>
@@ -35,7 +34,6 @@ export function BackupsPage() {
       </div>
 
       <BackupSettingsSection />
-      <RecipientsSection />
       <BackupRunsTable />
 
       <ImportDatabaseDialog open={importOpen} onOpenChange={setImportOpen} />

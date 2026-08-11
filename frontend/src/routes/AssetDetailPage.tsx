@@ -7,6 +7,7 @@ import {
   Pencil,
   Plus,
   Trash2,
+  Zap,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -62,6 +63,7 @@ export function AssetDetailPage() {
   const [eventDialogOpen, setEventDialogOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState<AssetEvent | undefined>(undefined)
   const [deletingEvent, setDeletingEvent] = useState<AssetEvent | undefined>(undefined)
+  const [quickEventTypeId, setQuickEventTypeId] = useState<number | undefined>(undefined)
 
   const assetQuery = useAsset(assetId)
   const eventsQuery = useAssetEvents(assetId)
@@ -93,6 +95,10 @@ export function AssetDetailPage() {
   }
 
   const asset: Asset = assetQuery.data
+
+  const topCounters = [...(countersQuery.data ?? [])]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3)
 
   return (
     <div className="space-y-6">
@@ -134,7 +140,7 @@ export function AssetDetailPage() {
                 <StatusBadge status={asset.status} />
               </dd>
             </div>
-            <InfoRow label="Инвентарный номер" value={asset.inventory_number ?? '—'} />
+            <InfoRow label="Инвентарный номер" value={asset.inventory_number?.toString() ?? '—'} />
             <InfoRow label="Серийный номер" value={asset.serial_number ?? '—'} />
             <InfoRow label="Место" value={asset.place?.name ?? '—'} />
             <InfoRow
@@ -191,16 +197,34 @@ export function AssetDetailPage() {
             <History className="size-4 text-muted-foreground" />
             История событий
           </CardTitle>
-          <Button
-            size="sm"
-            onClick={() => {
-              setEditingEvent(undefined)
-              setEventDialogOpen(true)
-            }}
-          >
-            <Plus className="size-4" />
-            Добавить событие
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {topCounters.map((counter) => (
+              <Button
+                key={counter.event_type_id}
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setQuickEventTypeId(counter.event_type_id)
+                  setEditingEvent(undefined)
+                  setEventDialogOpen(true)
+                }}
+              >
+                <Zap className="size-4" />
+                {counter.event_type_name}
+              </Button>
+            ))}
+            <Button
+              size="sm"
+              onClick={() => {
+                setQuickEventTypeId(undefined)
+                setEditingEvent(undefined)
+                setEventDialogOpen(true)
+              }}
+            >
+              <Plus className="size-4" />
+              Добавить событие
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {eventsQuery.isPending ? (
@@ -222,6 +246,7 @@ export function AssetDetailPage() {
                 <Button
                   size="sm"
                   onClick={() => {
+                    setQuickEventTypeId(undefined)
                     setEditingEvent(undefined)
                     setEventDialogOpen(true)
                   }}
@@ -250,6 +275,7 @@ export function AssetDetailPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
                           onClick={() => {
+                            setQuickEventTypeId(undefined)
                             setEditingEvent(event)
                             setEventDialogOpen(true)
                           }}
@@ -290,9 +316,13 @@ export function AssetDetailPage() {
         open={eventDialogOpen}
         onOpenChange={(open) => {
           setEventDialogOpen(open)
-          if (!open) setEditingEvent(undefined)
+          if (!open) {
+            setEditingEvent(undefined)
+            setQuickEventTypeId(undefined)
+          }
         }}
         event={editingEvent}
+        fixedEventTypeId={quickEventTypeId}
       />
 
       <AlertDialog open={deleteAssetOpen} onOpenChange={setDeleteAssetOpen}>

@@ -36,7 +36,9 @@ class BackupSettingsUpdate(BaseModel):
 
 
 class BackupRecipientBase(BaseModel):
-    chat_id: str = Field(min_length=1, max_length=64)
+    # Opaque, transport-specific address (Telegram chat_id, email, etc.) — its
+    # expected shape is determined by the parent BackupSettings' type.
+    recipient_identifier: str = Field(min_length=1, max_length=2000)
     label: str | None = Field(default=None, max_length=100)
 
 
@@ -53,12 +55,13 @@ class BackupRecipientRead(BackupRecipientBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    backup_settings_id: int
     is_active: bool
     created_at: datetime
 
 
 class DeliveryResult(BaseModel):
-    chat_id: str
+    recipient_identifier: str
     success: bool
     error: str | None
 

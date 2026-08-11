@@ -74,22 +74,27 @@ def delete_backup_settings(
     BackupService(db).delete_settings(settings_id)
 
 
-@router.get("/recipients", response_model=list[BackupRecipientRead])
+@router.get("/settings/{settings_id}/recipients", response_model=list[BackupRecipientRead])
 def list_recipients(
-    db: Session = Depends(get_db), current_user: User = Depends(get_current_admin)
+    settings_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin),
 ) -> list[BackupRecipientRead]:
-    return BackupService(db).list_recipients()
+    return BackupService(db).list_recipients(settings_id)
 
 
 @router.post(
-    "/recipients", response_model=BackupRecipientRead, status_code=status.HTTP_201_CREATED
+    "/settings/{settings_id}/recipients",
+    response_model=BackupRecipientRead,
+    status_code=status.HTTP_201_CREATED,
 )
 def create_recipient(
+    settings_id: int,
     payload: BackupRecipientCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin),
 ) -> BackupRecipientRead:
-    return BackupService(db).create_recipient(payload)
+    return BackupService(db).create_recipient(settings_id, payload)
 
 
 @router.patch("/recipients/{recipient_id}", response_model=BackupRecipientRead)

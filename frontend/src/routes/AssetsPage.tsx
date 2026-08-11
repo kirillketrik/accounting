@@ -59,8 +59,6 @@ import { useAssetStatuses } from '@/features/asset-statuses/hooks'
 import { useAssetTypes } from '@/features/asset-types/hooks'
 import { useAssets, useBulkDeleteAssets, useDeleteAsset } from '@/features/assets/hooks'
 import { AssetFormDialog } from '@/features/assets/AssetFormDialog'
-import { BulkAssetDialog } from '@/features/assets/BulkAssetDialog'
-import { BulkEventDialog } from '@/features/assets/BulkEventDialog'
 
 const DEFAULT_PAGE_SIZE = 10
 
@@ -89,8 +87,6 @@ export function AssetsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [editingAsset, setEditingAsset] = useState<Asset | undefined>(undefined)
   const [deletingAsset, setDeletingAsset] = useState<Asset | undefined>(undefined)
-  const [bulkAssetOpen, setBulkAssetOpen] = useState(false)
-  const [bulkEventOpen, setBulkEventOpen] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
@@ -200,10 +196,10 @@ export function AssetsPage() {
               Массовые действия
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setBulkAssetOpen(true)}>
+              <DropdownMenuItem onClick={() => navigate('/assets/bulk-add')}>
                 Массовое добавление активов
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setBulkEventOpen(true)}>
+              <DropdownMenuItem onClick={() => navigate('/assets/bulk-events')}>
                 Массовое добавление событий
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -427,9 +423,6 @@ export function AssetsPage() {
         }}
         asset={editingAsset}
       />
-
-      <BulkAssetDialog open={bulkAssetOpen} onOpenChange={setBulkAssetOpen} />
-      <BulkEventDialog open={bulkEventOpen} onOpenChange={setBulkEventOpen} />
 
       <AlertDialog open={!!deletingAsset} onOpenChange={(open) => !open && setDeletingAsset(undefined)}>
         <AlertDialogContent>

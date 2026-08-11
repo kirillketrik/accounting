@@ -60,6 +60,7 @@ interface AssetEventFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   event?: AssetEvent
+  fixedEventTypeId?: number
 }
 
 export function AssetEventFormDialog({
@@ -67,6 +68,7 @@ export function AssetEventFormDialog({
   open,
   onOpenChange,
   event,
+  fixedEventTypeId,
 }: AssetEventFormDialogProps) {
   const isEdit = !!event
   const navigate = useNavigate()
@@ -74,17 +76,30 @@ export function AssetEventFormDialog({
   const createEvent = useCreateAssetEvent(assetId)
   const updateEvent = useUpdateAssetEvent(assetId)
 
+  const defaultValues = event
+    ? eventToFormValues(event)
+    : { ...EMPTY_VALUES, event_type_id: fixedEventTypeId ?? EMPTY_VALUES.event_type_id }
+
   const form = useForm<AssetEventFormValues>({
     resolver: zodResolver(assetEventFormSchema),
-    defaultValues: event ? eventToFormValues(event) : EMPTY_VALUES,
+    defaultValues,
   })
 
   useEffect(() => {
     if (open) {
-      form.reset(event ? eventToFormValues(event) : EMPTY_VALUES)
+      form.reset(
+        event
+          ? eventToFormValues(event)
+          : { ...EMPTY_VALUES, event_type_id: fixedEventTypeId ?? EMPTY_VALUES.event_type_id }
+      )
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, event])
+  }, [open, event, fixedEventTypeId])
+
+  const fixedEventType =
+    !isEdit && fixedEventTypeId
+      ? eventTypes?.find((type) => type.id === fixedEventTypeId)
+      : undefined
 
   const isSubmitting = createEvent.isPending || updateEvent.isPending
 
@@ -123,36 +138,45 @@ export function AssetEventFormDialog({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="event_type_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Тип события</FormLabel>
-                  <Select
-                    items={Object.fromEntries(
-                      (eventTypes ?? []).map((type) => [String(type.id), type.name])
-                    )}
-                    value={field.value ? String(field.value) : ''}
-                    onValueChange={(value) => field.onChange(Number(value))}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Выберите тип события" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {eventTypes?.map((type) => (
-                        <SelectItem key={type.id} value={String(type.id)}>
-                          {type.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {!isEdit && fixedEventTypeId ? (
+              <div>
+                <p className="text-sm font-medium">Тип события</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {fixedEventType?.name ?? '—'}
+                </p>
+              </div>
+            ) : (
+              <FormField
+                control={form.control}
+                name="event_type_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Тип события</FormLabel>
+                    <Select
+                      items={Object.fromEntries(
+                        (eventTypes ?? []).map((type) => [String(type.id), type.name])
+                      )}
+                      value={field.value ? String(field.value) : ''}
+                      onValueChange={(value) => field.onChange(Number(value))}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Выберите тип события" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {eventTypes?.map((type) => (
+                          <SelectItem key={type.id} value={String(type.id)}>
+                            {type.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}

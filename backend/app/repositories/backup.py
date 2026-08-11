@@ -17,12 +17,31 @@ class BackupRecipientRepository(BaseRepository[BackupRecipient]):
     def __init__(self, db: Session) -> None:
         super().__init__(db, BackupRecipient)
 
-    def get_by_chat_id(self, chat_id: str) -> BackupRecipient | None:
-        return self.db.scalar(select(BackupRecipient).where(BackupRecipient.chat_id == chat_id))
+    def get_by_identifier(
+        self, backup_settings_id: int, recipient_identifier: str
+    ) -> BackupRecipient | None:
+        return self.db.scalar(
+            select(BackupRecipient).where(
+                BackupRecipient.backup_settings_id == backup_settings_id,
+                BackupRecipient.recipient_identifier == recipient_identifier,
+            )
+        )
 
-    def list_active(self) -> list[BackupRecipient]:
+    def list_by_settings(self, backup_settings_id: int) -> list[BackupRecipient]:
         return list(
-            self.db.scalars(select(BackupRecipient).where(BackupRecipient.is_active.is_(True)))
+            self.db.scalars(
+                select(BackupRecipient).where(BackupRecipient.backup_settings_id == backup_settings_id)
+            )
+        )
+
+    def list_active_for_settings(self, backup_settings_id: int) -> list[BackupRecipient]:
+        return list(
+            self.db.scalars(
+                select(BackupRecipient).where(
+                    BackupRecipient.backup_settings_id == backup_settings_id,
+                    BackupRecipient.is_active.is_(True),
+                )
+            )
         )
 
 

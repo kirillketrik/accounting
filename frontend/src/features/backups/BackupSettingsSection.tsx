@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { DatabaseBackup, MoreHorizontal, Plus } from 'lucide-react'
+import { Fragment, useState } from 'react'
+import { ChevronDown, DatabaseBackup, MoreHorizontal, Plus } from 'lucide-react'
 
+import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,6 +46,7 @@ import {
   BackupSettingsFormDialog,
   type BackupSettingsFormValues,
 } from '@/features/backups/BackupSettingsFormDialog'
+import { RecipientsPanel } from '@/features/backups/RecipientsPanel'
 import { BACKUP_SETTINGS_TYPE_LABELS } from '@/features/backups/backup-settings-types'
 
 export function BackupSettingsSection() {
@@ -56,6 +59,21 @@ export function BackupSettingsSection() {
   const [formOpen, setFormOpen] = useState(false)
   const [editingSettings, setEditingSettings] = useState<BackupSettings | undefined>(undefined)
   const [deletingSettings, setDeletingSettings] = useState<BackupSettings | undefined>(undefined)
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
+  const [loadedIds, setLoadedIds] = useState<Set<number>>(new Set())
+
+  function toggleExpanded(id: number) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+        setLoadedIds((loaded) => new Set(loaded).add(id))
+      }
+      return next
+    })
+  }
 
   async function handleSubmit(values: BackupSettingsFormValues) {
     if (editingSettings) {
@@ -129,6 +147,7 @@ export function BackupSettingsSection() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10" />
                   <TableHead>Название</TableHead>
                   <TableHead>Тип</TableHead>
                   <TableHead>Статус</TableHead>
@@ -138,54 +157,87 @@ export function BackupSettingsSection() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {BACKUP_SETTINGS_TYPE_LABELS[item.type]}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={item.enabled ? 'secondary' : 'destructive'}>
-                        {item.enabled ? 'Включено' : 'Отключено'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {item.interval_hours ? `${item.interval_hours} ч.` : '—'}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {item.last_run_at ? new Date(item.last_run_at).toLocaleString('ru-RU') : '—'}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" />}>
-                          <MoreHorizontal className="size-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            disabled={runNow.isPending}
-                            onClick={() => runNow.mutate(item.id)}
+                {data.map((item) => {
+                  const expanded = expandedIds.has(item.id)
+                  return (
+                    <Fragment key={item.id}>
+                      <TableRow>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-expanded={expanded}
+                            aria-label={expanded ? 'Свернуть получателей' : 'Показать получателей'}
+                            onClick={() => toggleExpanded(item.id)}
                           >
-                            Запустить сейчас
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setEditingSettings(item)
-                              setFormOpen(true)
-                            }}
-                          >
-                            Изменить
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            variant="destructive"
-                            onClick={() => setDeletingSettings(item)}
-                          >
-                            Удалить
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                            <ChevronDown
+                              className={cn('size-4 transition-transform', expanded && 'rotate-180')}
+                            />
+                          </Button>
+                        </TableCell>
+                        <TableCell className="font-medium">{item.name}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {BACKUP_SETTINGS_TYPE_LABELS[item.type]}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={item.enabled ? 'secondary' : 'destructive'}>
+                            {item.enabled ? 'Включено' : 'Отключено'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {item.interval_hours ? `${item.interval_hours} ч.` : '—'}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {item.last_run_at
+                            ? new Date(item.last_run_at).toLocaleString('ru-RU')
+                            : '—'}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" />}>
+                              <MoreHorizontal className="size-4" />
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                disabled={runNow.isPending}
+                                onClick={() => runNow.mutate(item.id)}
+                              >
+                                Запустить сейчас
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setEditingSettings(item)
+                                  setFormOpen(true)
+                                }}
+                              >
+                                Изменить
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onClick={() => setDeletingSettings(item)}
+                              >
+                                Удалить
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                      <TableRow className="border-none hover:bg-transparent">
+                        <TableCell colSpan={7} className="whitespace-normal p-0">
+                          <Collapsible open={expanded}>
+                            <CollapsibleContent>
+                              <div className="border-t bg-muted/30">
+                                {loadedIds.has(item.id) ? (
+                                  <RecipientsPanel settings={item} />
+                                ) : null}
+                              </div>
+                            </CollapsibleContent>
+                          </Collapsible>
+                        </TableCell>
+                      </TableRow>
+                    </Fragment>
+                  )
+                })}
               </TableBody>
             </Table>
           </div>
@@ -211,8 +263,8 @@ export function BackupSettingsSection() {
           <AlertDialogHeader>
             <AlertDialogTitle>Удалить конфигурацию?</AlertDialogTitle>
             <AlertDialogDescription>
-              Конфигурация «{deletingSettings?.name}» и её сохранённые учётные данные будут
-              удалены безвозвратно.
+              Конфигурация «{deletingSettings?.name}», её сохранённые учётные данные и все
+              получатели будут удалены безвозвратно.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

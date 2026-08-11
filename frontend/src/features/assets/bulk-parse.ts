@@ -1,3 +1,5 @@
+import type { AssetBulkItem } from '@/api/types'
+
 export type BulkAssetField = 'name' | 'inventory' | 'serial'
 
 const VALID_FIELDS: BulkAssetField[] = ['name', 'inventory', 'serial']
@@ -90,4 +92,15 @@ export function parseAssetLine(
   })
 
   return result
+}
+
+export function toBulkItems(rows: ParsedAssetLine[]): AssetBulkItem[] {
+  return rows.map((row) => {
+    const inventoryNumber = row.inventory_number ? Number(row.inventory_number) : undefined
+    return {
+      name: row.name || undefined,
+      inventory_number: Number.isNaN(inventoryNumber as number) ? undefined : inventoryNumber,
+      serial_number: row.serial_number || undefined,
+    }
+  })
 }

@@ -69,7 +69,7 @@ export function ExportAssetsDialog({ open, onOpenChange }: ExportAssetsDialogPro
     id: 0,
     asset_type_id: 0,
     name: 'Canon 728 Toner',
-    inventory_number: 'INV-1001',
+    inventory_number: 1001,
     serial_number: 'SN-CN-9931',
     status_id: 0,
     status: { id: 0, name: 'Используется', description: null, is_default: false, is_disposal: false },

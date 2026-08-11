@@ -3,7 +3,12 @@ import { z } from 'zod'
 export const assetFormSchema = z.object({
   asset_type_id: z.number({ error: 'Выберите тип актива' }).int().positive(),
   name: z.string().max(200).optional().or(z.literal('')),
-  inventory_number: z.string().max(100).optional().or(z.literal('')),
+  inventory_number: z
+    .string()
+    .regex(/^\d*$/, 'Только цифры')
+    .max(15)
+    .optional()
+    .or(z.literal('')),
   serial_number: z.string().max(100).optional().or(z.literal('')),
   place_id: z.number().int().positive().optional(),
   notes: z.string().optional().or(z.literal('')),

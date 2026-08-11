@@ -82,13 +82,17 @@ class BackupService:
 
     # -- recipients --------------------------------------------------------
 
-    def list_recipients(self) -> list[BackupRecipient]:
-        return self.recipient_repo.list()
+    def list_recipients(self, backup_settings_id: int) -> list[BackupRecipient]:
+        self.get_settings(backup_settings_id)
+        return self.recipient_repo.list_by_settings(backup_settings_id)
 
-    def create_recipient(self, data: BackupRecipientCreate) -> BackupRecipient:
-        if self.recipient_repo.get_by_chat_id(data.chat_id) is not None:
-            raise ConflictError(f"Recipient with chat_id '{data.chat_id}' already exists")
-        return self.recipient_repo.create(**data.model_dump())
+    def create_recipient(self, backup_settings_id: int, data: BackupRecipientCreate) -> BackupRecipient:
+        self.get_settings(backup_settings_id)
+        if self.recipient_repo.get_by_identifier(backup_settings_id, data.recipient_identifier) is not None:
+            raise ConflictError(
+                f"Recipient '{data.recipient_identifier}' already exists for this backup settings"
+            )
+        return self.recipient_repo.create(backup_settings_id=backup_settings_id, **data.model_dump())
 
     def update_recipient(self, id_: int, data: BackupRecipientUpdate) -> BackupRecipient:
         obj = self.recipient_repo.get(id_)
@@ -155,7 +159,9 @@ class BackupService:
         error_message = None
 
         if settings is not None:
-            recipients = [r.chat_id for r in self.recipient_repo.list_active()]
+            recipients = [
+                r.recipient_identifier for r in self.recipient_repo.list_active_for_settings(settings.id)
+            ]
             if recipients:
                 if settings.credentials:
                     raw = decrypt_secret(settings.credentials)

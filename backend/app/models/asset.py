@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -22,7 +22,7 @@ class Asset(Base):
         ForeignKey("asset_types.id", ondelete="RESTRICT"), nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
-    inventory_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    inventory_number: Mapped[int | None] = mapped_column(Integer, nullable=True)
     serial_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     status_id: Mapped[int] = mapped_column(
         ForeignKey("asset_statuses.id", ondelete="RESTRICT"), nullable=False, index=True

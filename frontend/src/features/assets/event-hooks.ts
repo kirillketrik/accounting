@@ -1,9 +1,9 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
 import { eventsApi } from '@/api/endpoints'
 import { ApiError } from '@/api/client'
-import type { AssetEventBulkCreateInput, AssetEventInput } from '@/api/types'
+import type { AssetEventBulkApplyInput, AssetEventBulkResolveInput, AssetEventInput } from '@/api/types'
 import { queryKeys } from '@/lib/query-keys'
 
 export function useUpdateAssetEvent(assetId: number) {
@@ -21,15 +21,16 @@ export function useUpdateAssetEvent(assetId: number) {
   })
 }
 
-export function useBulkCreateEvents() {
+export function useBulkApplyEvents() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: AssetEventBulkCreateInput) => eventsApi.bulkCreate(data),
+    mutationFn: (data: AssetEventBulkApplyInput) => eventsApi.bulkApply(data),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['assets'] })
       queryClient.invalidateQueries({ queryKey: ['asset-history'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['audit-logs'] })
+      queryClient.invalidateQueries({ queryKey: ['events', 'bulk-preview'] })
       result.created.forEach(({ event }) => {
         queryClient.invalidateQueries({ queryKey: queryKeys.assetEvents(event.asset_id) })
         queryClient.invalidateQueries({ queryKey: queryKeys.assetEventCounters(event.asset_id) })
@@ -40,10 +41,19 @@ export function useBulkCreateEvents() {
       } else if (result.created.length > 0) {
         toast.warning(`Добавлено: ${result.created.length}, не найдено: ${result.errors.length}`)
       } else {
-        toast.error('Ни один инвентарный номер не найден')
+        toast.error('Не удалось применить событие ни к одному активу')
       }
     },
     onError: (error: ApiError) => toast.error(error.message),
+  })
+}
+
+export function useBulkPreviewEvents(payload: AssetEventBulkResolveInput | null) {
+  return useQuery({
+    queryKey: queryKeys.eventBulkPreview(payload ?? { asset_ids: [], inventory_numbers: [] }),
+    queryFn: () => eventsApi.bulkPreview(payload!),
+    enabled: payload !== null,
+    placeholderData: (prev) => prev,
   })
 }
 

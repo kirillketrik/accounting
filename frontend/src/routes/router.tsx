@@ -13,10 +13,13 @@ import { AssetsPage } from '@/routes/AssetsPage'
 import { AuditLogDetailPage } from '@/routes/AuditLogDetailPage'
 import { AuditLogPage } from '@/routes/AuditLogPage'
 import { BackupsPage } from '@/routes/BackupsPage'
+import { BulkAssetCreatePage } from '@/routes/BulkAssetCreatePage'
+import { BulkEventCreatePage } from '@/routes/BulkEventCreatePage'
 import { DashboardPage } from '@/routes/DashboardPage'
 import { EventTypesPage } from '@/routes/EventTypesPage'
 import { NotFoundPage } from '@/routes/NotFoundPage'
 import { PlacesPage } from '@/routes/PlacesPage'
+import { ProfilePage } from '@/routes/ProfilePage'
 import { SettingsPage } from '@/routes/SettingsPage'
 import { UsersPage } from '@/routes/UsersPage'
 
@@ -31,6 +34,8 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <DashboardPage /> },
           { path: 'assets', element: <AssetsPage /> },
+          { path: 'assets/bulk-add', element: <BulkAssetCreatePage /> },
+          { path: 'assets/bulk-events', element: <BulkEventCreatePage /> },
           { path: 'assets/:id', element: <AssetDetailPage /> },
           { path: 'asset-types', element: <AssetTypesPage /> },
           { path: 'places', element: <PlacesPage /> },
@@ -42,6 +47,7 @@ export const router = createBrowserRouter([
           { path: 'audit-log', element: <AuditLogPage /> },
           { path: 'audit-log/:id', element: <AuditLogDetailPage /> },
           { path: 'settings', element: <SettingsPage /> },
+          { path: 'profile', element: <ProfilePage /> },
           { path: 'users', element: <UsersPage /> },
           { path: 'backups', element: <BackupsPage /> },
           { path: '*', element: <NotFoundPage /> },

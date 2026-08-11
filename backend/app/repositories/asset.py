@@ -1,4 +1,4 @@
-from sqlalchemy import func, or_, select
+from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.asset import Asset
@@ -29,7 +29,7 @@ class AssetRepository(BaseRepository[Asset]):
         )
 
     def get_by_inventory_number_and_type(
-        self, inventory_number: str, asset_type_id: int
+        self, inventory_number: int, asset_type_id: int
     ) -> Asset | None:
         return self.db.scalar(
             select(Asset).where(
@@ -38,7 +38,27 @@ class AssetRepository(BaseRepository[Asset]):
             )
         )
 
-    def list_inventory_numbers(self, asset_type_id: int) -> list[str]:
+    def list_by_ids(self, ids: list[int]) -> list[Asset]:
+        if not ids:
+            return []
+        stmt = (
+            select(Asset)
+            .options(joinedload(Asset.asset_type), joinedload(Asset.status))
+            .where(Asset.id.in_(ids))
+        )
+        return list(self.db.scalars(stmt).unique())
+
+    def list_by_inventory_numbers(self, numbers: list[int]) -> list[Asset]:
+        if not numbers:
+            return []
+        stmt = (
+            select(Asset)
+            .options(joinedload(Asset.asset_type), joinedload(Asset.status))
+            .where(Asset.inventory_number.in_(numbers))
+        )
+        return list(self.db.scalars(stmt).unique())
+
+    def list_inventory_numbers(self, asset_type_id: int) -> list[int]:
         stmt = select(Asset.inventory_number).where(
             Asset.asset_type_id == asset_type_id, Asset.inventory_number.isnot(None)
         )
@@ -68,7 +88,7 @@ class AssetRepository(BaseRepository[Asset]):
             stmt = stmt.where(
                 or_(
                     Asset.name.ilike(like),
-                    Asset.inventory_number.ilike(like),
+                    cast(Asset.inventory_number, String).ilike(like),
                     Asset.serial_number.ilike(like),
                     Place.name.ilike(like),
                     User.first_name.ilike(like),

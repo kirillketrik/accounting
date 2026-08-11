@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -37,12 +37,23 @@ class BackupSettings(Base):
 
 
 class BackupRecipient(Base):
-    """A Telegram chat_id (user or group) that receives backup documents."""
+    """An address (Telegram chat_id, email, etc.) that receives backup documents
+    through a specific BackupSettings destination — the identifier's shape and
+    meaning are transport-specific, so it only makes sense in that context.
+    """
 
     __tablename__ = "backup_recipients"
+    __table_args__ = (
+        UniqueConstraint(
+            "backup_settings_id", "recipient_identifier", name="uq_backup_recipients_settings_identifier"
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    chat_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    backup_settings_id: Mapped[int] = mapped_column(
+        ForeignKey("backup_settings.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    recipient_identifier: Mapped[str] = mapped_column(Text, nullable=False)
     label: Mapped[str | None] = mapped_column(String(100), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="1")
     created_at: Mapped[datetime] = mapped_column(

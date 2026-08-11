@@ -64,7 +64,7 @@ function exportFieldValue(asset: Asset, field: ExportField): string {
     case 'name':
       return asset.name
     case 'inventory_number':
-      return asset.inventory_number ?? ''
+      return asset.inventory_number != null ? String(asset.inventory_number) : ''
     case 'serial_number':
       return asset.serial_number ?? ''
     case 'status':

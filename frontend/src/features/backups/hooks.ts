@@ -56,44 +56,45 @@ export function useDeleteBackupSettings() {
   })
 }
 
-export function useBackupRecipients() {
+export function useBackupRecipients(settingsId: number) {
   return useQuery({
-    queryKey: queryKeys.backupRecipients,
-    queryFn: () => backupsApi.listRecipients(),
+    queryKey: queryKeys.backupRecipients(settingsId),
+    queryFn: () => backupsApi.listRecipients(settingsId),
+    enabled: !!settingsId,
   })
 }
 
-export function useCreateBackupRecipient() {
+export function useCreateBackupRecipient(settingsId: number) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: BackupRecipientInput) => backupsApi.createRecipient(data),
+    mutationFn: (data: BackupRecipientInput) => backupsApi.createRecipient(settingsId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.backupRecipients })
+      queryClient.invalidateQueries({ queryKey: queryKeys.backupRecipients(settingsId) })
       toast.success('Получатель добавлен')
     },
     onError: (error: ApiError) => toast.error(error.message),
   })
 }
 
-export function useUpdateBackupRecipient() {
+export function useUpdateBackupRecipient(settingsId: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: BackupRecipientUpdateInput }) =>
       backupsApi.updateRecipient(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.backupRecipients })
+      queryClient.invalidateQueries({ queryKey: queryKeys.backupRecipients(settingsId) })
       toast.success('Получатель обновлён')
     },
     onError: (error: ApiError) => toast.error(error.message),
   })
 }
 
-export function useDeleteBackupRecipient() {
+export function useDeleteBackupRecipient(settingsId: number) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => backupsApi.deleteRecipient(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.backupRecipients })
+      queryClient.invalidateQueries({ queryKey: queryKeys.backupRecipients(settingsId) })
       toast.success('Получатель удалён')
     },
     onError: (error: ApiError) => toast.error(error.message),
