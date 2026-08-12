@@ -1,7 +1,10 @@
+from datetime import datetime
+
 from sqlalchemy import String, cast, func, or_, select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models.asset import Asset
+from app.models.asset_custom_field_value import AssetCustomFieldValue
 from app.models.asset_status import AssetStatus
 from app.models.asset_type import AssetType
 from app.models.place import Place
@@ -25,7 +28,14 @@ class AssetRepository(BaseRepository[Asset]):
 
     def get_with_type(self, id_: int) -> Asset | None:
         return self.db.scalar(
-            select(Asset).options(joinedload(Asset.asset_type)).where(Asset.id == id_)
+            select(Asset)
+            .options(
+                joinedload(Asset.asset_type),
+                selectinload(Asset.custom_field_values).joinedload(
+                    AssetCustomFieldValue.definition
+                ),
+            )
+            .where(Asset.id == id_)
         )
 
     def get_by_inventory_number_and_type(
@@ -48,7 +58,9 @@ class AssetRepository(BaseRepository[Asset]):
         )
         return list(self.db.scalars(stmt).unique())
 
-    def list_by_inventory_numbers(self, numbers: list[int]) -> list[Asset]:
+    def list_by_inventory_numbers(
+        self, numbers: list[int], asset_type_id: int | None = None
+    ) -> list[Asset]:
         if not numbers:
             return []
         stmt = (
@@ -56,6 +68,8 @@ class AssetRepository(BaseRepository[Asset]):
             .options(joinedload(Asset.asset_type), joinedload(Asset.status))
             .where(Asset.inventory_number.in_(numbers))
         )
+        if asset_type_id is not None:
+            stmt = stmt.where(Asset.asset_type_id == asset_type_id)
         return list(self.db.scalars(stmt).unique())
 
     def list_inventory_numbers(self, asset_type_id: int) -> list[int]:
@@ -135,5 +149,18 @@ class AssetRepository(BaseRepository[Asset]):
         )
         return list(self.db.execute(stmt).all())
 
+    def count_by_type(self) -> list[tuple[int, str, int]]:
+        stmt = (
+            select(AssetType.id, AssetType.name, func.count(Asset.id))
+            .select_from(Asset)
+            .join(AssetType, Asset.asset_type_id == AssetType.id)
+            .group_by(AssetType.id, AssetType.name)
+        )
+        return list(self.db.execute(stmt).all())
+
     def total_count(self) -> int:
         return self.db.scalar(select(func.count()).select_from(Asset)) or 0
+
+    def created_dates_since(self, since: datetime) -> list[datetime]:
+        stmt = select(Asset.created_at).where(Asset.created_at >= since)
+        return list(self.db.scalars(stmt))

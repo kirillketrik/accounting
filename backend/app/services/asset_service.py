@@ -4,10 +4,12 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import ConflictError, NotFoundError
 from app.models.asset import Asset
+from app.models.asset_custom_field_value import AssetCustomFieldValue
 from app.models.asset_type import AssetType
 from app.models.place import Place
 from app.models.user import User
 from app.repositories.asset import AssetRepository
+from app.repositories.asset_custom_field_definition import AssetCustomFieldDefinitionRepository
 from app.repositories.asset_event import AssetEventRepository
 from app.repositories.asset_naming_rule import AssetNamingRuleRepository
 from app.repositories.asset_status import AssetStatusRepository
@@ -23,6 +25,12 @@ from app.schemas.asset import (
     AssetBulkResult,
     AssetCreate,
     AssetUpdate,
+)
+from app.schemas.asset_custom_field import (
+    AssetCustomFieldValueInput,
+    CustomFieldType,
+    CustomFieldValue,
+    serialize_value_for_storage,
 )
 from app.schemas.event_counter import EventCounter
 from app.services.audit_log_service import AuditLogService, diff_fields, snapshot
@@ -47,6 +55,7 @@ class AssetService:
         self.place_repo = PlaceRepository(db)
         self.event_repo = AssetEventRepository(db)
         self.naming_rule_repo = AssetNamingRuleRepository(db)
+        self.custom_field_definition_repo = AssetCustomFieldDefinitionRepository(db)
         self.audit = AuditLogService(db)
 
     def list(
@@ -118,6 +127,88 @@ class AssetService:
             return f"{serial_number} {asset_type.name}".strip()
         return asset_type.name
 
+    def _validate_custom_field_values(
+        self,
+        asset_type_id: int,
+        inputs: list[AssetCustomFieldValueInput],
+        *,
+        existing: dict[int, str | None] | None = None,
+    ) -> dict[int, tuple[CustomFieldType, CustomFieldValue]]:
+        """Checks every submitted definition_id belongs to asset_type_id and every
+        required definition for that type has a non-empty value. Raises before any
+        DB write so a validation failure never leaves a partially-created/updated asset.
+
+        `existing` is the asset's current stored values (definition_id -> raw stored
+        string) before this call, or None when creating a brand new asset. Required-ness
+        is always enforced on create (existing=None). On update, a required field that's
+        missing is only rejected if it *wasn't already* missing beforehand — otherwise
+        adding/marking a field required after the fact would permanently block editing
+        every pre-existing asset of that type (even for changes unrelated to custom
+        fields) until someone manually backfills it. Actively clearing a previously-filled
+        required field is still rejected.
+        """
+        definitions = {
+            d.id: d for d in self.custom_field_definition_repo.list_by_asset_type(asset_type_id)
+        }
+
+        provided: dict[int, CustomFieldValue] = {}
+        for item in inputs:
+            definition = definitions.get(item.definition_id)
+            if definition is None:
+                raise ConflictError(
+                    f"Custom field {item.definition_id} does not belong to this asset type"
+                )
+            provided[item.definition_id] = item.value
+
+        for definition in definitions.values():
+            if not definition.is_required:
+                continue
+            value = provided.get(definition.id)
+            is_missing = definition.id not in provided or value is None or value == ""
+            if not is_missing:
+                continue
+            if existing is not None and existing.get(definition.id) in (None, ""):
+                continue  # was already missing before this update — not a new problem
+            raise ConflictError(f"Custom field '{definition.name}' is required")
+
+        return {
+            definition_id: (CustomFieldType(definitions[definition_id].field_type), value)
+            for definition_id, value in provided.items()
+        }
+
+    def _build_custom_field_value_rows(
+        self, asset_type_id: int, inputs: list[AssetCustomFieldValueInput]
+    ) -> list[AssetCustomFieldValue]:
+        resolved = self._validate_custom_field_values(asset_type_id, inputs)
+        return [
+            AssetCustomFieldValue(
+                definition_id=definition_id,
+                value=serialize_value_for_storage(value, field_type),
+            )
+            for definition_id, (field_type, value) in resolved.items()
+        ]
+
+    def _apply_custom_field_values(
+        self, obj: Asset, asset_type_id: int, inputs: list[AssetCustomFieldValueInput]
+    ) -> None:
+        """Upserts obj.custom_field_values in place from the submitted inputs. Values
+        for definitions no longer present in `inputs` are dropped (cascade="all,
+        delete-orphan" on Asset.custom_field_values handles the row deletion on flush).
+        """
+        existing_raw = {v.definition_id: v.value for v in obj.custom_field_values}
+        resolved = self._validate_custom_field_values(asset_type_id, inputs, existing=existing_raw)
+        existing_by_definition = {v.definition_id: v for v in obj.custom_field_values}
+        kept: list[AssetCustomFieldValue] = []
+        for definition_id, (field_type, value) in resolved.items():
+            stored = serialize_value_for_storage(value, field_type)
+            existing = existing_by_definition.get(definition_id)
+            if existing is not None:
+                existing.value = stored
+                kept.append(existing)
+            else:
+                kept.append(AssetCustomFieldValue(definition_id=definition_id, value=stored))
+        obj.custom_field_values = kept
+
     def _next_inventory_number(self, asset_type_id: int, seen: set[int]) -> int:
         """Generate the next free inventory number for this asset type.
 
@@ -145,7 +236,7 @@ class AssetService:
             self._get_status_or_raise(data.status_id)
         if data.place_id is not None:
             self._get_place_or_raise(data.place_id)
-        payload = data.model_dump()
+        payload = data.model_dump(exclude={"custom_field_values"})
         payload["inventory_number"] = (
             data.inventory_number
             if data.inventory_number is not None
@@ -154,6 +245,9 @@ class AssetService:
         payload["name"] = self._default_name(data.name, data.serial_number, asset_type)
         payload["status_id"] = data.status_id or self._resolve_default_status_id()
         payload["responsible_user_id"] = current_user.id
+        payload["custom_field_values"] = self._build_custom_field_value_rows(
+            data.asset_type_id, data.custom_field_values
+        )
         obj = self.repo.create(**payload)
         self.audit.record(
             entity_type="asset",
@@ -166,7 +260,7 @@ class AssetService:
 
     def update(self, id_: int, data: AssetUpdate, current_user: User) -> Asset:
         obj = self.get(id_)
-        payload = data.model_dump(exclude_unset=True)
+        payload = data.model_dump(exclude_unset=True, exclude={"custom_field_values"})
         payload["responsible_user_id"] = current_user.id
         if "asset_type_id" in payload:
             self._get_asset_type_or_raise(payload["asset_type_id"])
@@ -181,9 +275,30 @@ class AssetService:
                 raise ConflictError(
                     f"Inventory number '{payload['inventory_number']}' already in use"
                 )
+
         before = {key: getattr(obj, key) for key in payload}
+        before_cf = {f"custom_field:{v.definition_id}": v.value for v in obj.custom_field_values}
+
+        changing_type = "asset_type_id" in payload and payload["asset_type_id"] != obj.asset_type_id
+        if data.custom_field_values is not None or changing_type:
+            # Values are scoped to a specific asset type's definitions. If the type is
+            # changing and the caller didn't resend custom_field_values, treat it as []
+            # rather than silently keeping the old type's values (and skipping required-
+            # field validation) attached to an asset that no longer has that type.
+            new_values = data.custom_field_values if data.custom_field_values is not None else []
+            asset_type_id = payload.get("asset_type_id", obj.asset_type_id)
+            self._apply_custom_field_values(obj, asset_type_id, new_values)
+
         self.repo.update(obj, **payload)
+
         changes = diff_fields(before, payload)
+        after_cf = {f"custom_field:{v.definition_id}": v.value for v in obj.custom_field_values}
+        # diff_fields only iterates `after`'s keys, so a field dropped entirely (present
+        # in before_cf, absent from after_cf) needs an explicit None entry to be detected.
+        for key in before_cf:
+            after_cf.setdefault(key, None)
+        changes.update(diff_fields(before_cf, after_cf))
+
         if changes:
             self.audit.record(
                 entity_type="asset",

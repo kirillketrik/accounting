@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   Boxes,
+  Download,
   Package2,
   PackagePlus,
   ListPlus,
@@ -9,11 +10,10 @@ import {
   ListTree,
   Flag,
   Archive,
-  DatabaseBackup,
   ScrollText,
-  Settings,
   Users,
   Wand2,
+  SlidersHorizontal,
   Shield,
   type LucideIcon,
 } from 'lucide-react'
@@ -37,9 +37,16 @@ export const navItems: NavItem[] = [
         to: '/assets',
         icon: Package2,
         children: [
-          { label: 'Массовое добавление активов', to: '/assets/bulk-add', icon: PackagePlus },
-          { label: 'Массовое добавление событий', to: '/assets/bulk-events', icon: ListPlus },
+          { label: 'Добавление активов', to: '/assets/bulk-add', icon: PackagePlus },
+          { label: 'Добавление событий', to: '/assets/bulk-events', icon: ListPlus },
+          { label: 'Экспорт активов', to: '/assets/export', icon: Download },
           { label: 'Фабрика названий', to: '/asset-naming-rules', icon: Wand2 },
+          {
+            label: 'Доп. поля',
+            to: '/asset-custom-fields',
+            icon: SlidersHorizontal,
+            adminOnly: true,
+          },
         ],
       },
       { label: 'Типы активов', to: '/asset-types', icon: Tags },
@@ -49,15 +56,13 @@ export const navItems: NavItem[] = [
       { label: 'История', to: '/history', icon: Archive },
     ],
   },
-  { label: 'Журнал действий', to: '/audit-log', icon: ScrollText },
-  { label: 'Настройки', to: '/settings', icon: Settings },
   {
     label: 'Админка',
     icon: Shield,
     adminOnly: true,
     children: [
       { label: 'Пользователи', to: '/users', icon: Users },
-      { label: 'Резервные копии', to: '/backups', icon: DatabaseBackup },
+      { label: 'Журнал действий', to: '/audit-log', icon: ScrollText },
     ],
   },
 ]

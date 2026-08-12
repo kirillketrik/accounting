@@ -6,7 +6,6 @@ import {
   ArrowUp,
   ArrowUpDown,
   Boxes,
-  ListPlus,
   MoreHorizontal,
   Plus,
   Search,
@@ -190,20 +189,6 @@ export function AssetsPage() {
             <Plus className="size-4" />
             Добавить актив
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="outline" />}>
-              <ListPlus className="size-4" />
-              Массовые действия
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => navigate('/assets/bulk-add')}>
-                Массовое добавление активов
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/assets/bulk-events')}>
-                Массовое добавление событий
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
       </div>
 

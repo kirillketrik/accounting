@@ -1,19 +1,83 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Activity, Boxes, Download, History } from 'lucide-react'
+import { Archive, Boxes, History, Tag, TrendingUp, Wrench } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/empty-state'
 import { ErrorState } from '@/components/error-state'
 import { useDashboardSummary } from '@/features/dashboard/hooks'
-import { ExportAssetsDialog } from '@/features/export/ExportAssetsDialog'
+import {
+  AssetsByStatusChart,
+  AssetsByTypeChart,
+  DisposalsChart,
+  EventsByTypeChart,
+  MonthlyActivityChart,
+} from '@/features/dashboard/charts'
+
+function StatCard({
+  title,
+  value,
+  icon: Icon,
+  isPending,
+}: {
+  title: string
+  value: number | undefined
+  icon: React.ComponentType<{ className?: string }>
+  isPending: boolean
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+        <Icon className="size-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        {isPending ? (
+          <Skeleton className="h-8 w-16" />
+        ) : (
+          <div className="text-3xl font-bold">{value}</div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function ChartCard({
+  title,
+  icon: Icon,
+  isPending,
+  isEmpty,
+  emptyDescription,
+  children,
+}: {
+  title: string
+  icon: React.ComponentType<{ className?: string }>
+  isPending: boolean
+  isEmpty: boolean
+  emptyDescription: string
+  children: React.ReactNode
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center gap-2">
+        <Icon className="size-4 text-muted-foreground" />
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isPending ? (
+          <Skeleton className="h-60 w-full" />
+        ) : isEmpty ? (
+          <p className="py-16 text-center text-sm text-muted-foreground">{emptyDescription}</p>
+        ) : (
+          children
+        )}
+      </CardContent>
+    </Card>
+  )
+}
 
 export function DashboardPage() {
   const { data, isPending, isError, error, refetch } = useDashboardSummary()
-  const [exportOpen, setExportOpen] = useState(false)
 
   return (
     <div className="space-y-6">
@@ -22,13 +86,7 @@ export function DashboardPage() {
           <h2 className="text-2xl font-semibold tracking-tight">Дашборд</h2>
           <p className="text-muted-foreground">Обзор активов вашей организации.</p>
         </div>
-        <Button variant="outline" onClick={() => setExportOpen(true)}>
-          <Download className="size-4" />
-          Экспорт активов
-        </Button>
       </div>
-
-      <ExportAssetsDialog open={exportOpen} onOpenChange={setExportOpen} />
 
       {isError && (
         <ErrorState message={(error as Error).message} onRetry={() => refetch()} />
@@ -36,51 +94,82 @@ export function DashboardPage() {
 
       {!isError && (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Всего активов
-                </CardTitle>
-                <Boxes className="size-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                {isPending ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : (
-                  <div className="text-3xl font-bold">{data.total_assets}</div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="sm:col-span-2">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Активы по статусу
-                </CardTitle>
-                <Activity className="size-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                {isPending ? (
-                  <div className="flex flex-wrap gap-2">
-                    <Skeleton className="h-6 w-24" />
-                    <Skeleton className="h-6 w-24" />
-                    <Skeleton className="h-6 w-24" />
-                  </div>
-                ) : data.assets_by_status.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Активов пока нет.</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {data.assets_by_status.map((entry) => (
-                      <Badge key={entry.status_id} variant="secondary" className="text-sm">
-                        {entry.status_name}: {entry.count}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <StatCard
+              title="Всего активов"
+              value={data?.total_assets}
+              icon={Boxes}
+              isPending={isPending}
+            />
+            <StatCard
+              title="Всего событий"
+              value={data?.total_events}
+              icon={Wrench}
+              isPending={isPending}
+            />
+            <StatCard
+              title="Списано активов"
+              value={data?.total_disposals}
+              icon={Archive}
+              isPending={isPending}
+            />
           </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <ChartCard
+              title="Активы по типу"
+              icon={Tag}
+              isPending={isPending}
+              isEmpty={!data || data.assets_by_type.length === 0}
+              emptyDescription="Активов пока нет."
+            >
+              {data && <AssetsByTypeChart data={data.assets_by_type} />}
+            </ChartCard>
+
+            <ChartCard
+              title="Активы по статусу"
+              icon={Boxes}
+              isPending={isPending}
+              isEmpty={!data || data.assets_by_status.length === 0}
+              emptyDescription="Активов пока нет."
+            >
+              {data && <AssetsByStatusChart data={data.assets_by_status} />}
+            </ChartCard>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <ChartCard
+              title="События по типу"
+              icon={Wrench}
+              isPending={isPending}
+              isEmpty={!data || data.events_by_type.length === 0}
+              emptyDescription="События ещё не зафиксированы."
+            >
+              {data && <EventsByTypeChart data={data.events_by_type} />}
+            </ChartCard>
+
+            <ChartCard
+              title="Списания по месяцам"
+              icon={Archive}
+              isPending={isPending}
+              isEmpty={!data || data.monthly_activity.every((point) => point.disposals === 0)}
+              emptyDescription="Списаний за последние 12 месяцев не было."
+            >
+              {data && <DisposalsChart data={data.monthly_activity} />}
+            </ChartCard>
+          </div>
+
+          <ChartCard
+            title="Активность за последние 12 месяцев"
+            icon={TrendingUp}
+            isPending={isPending}
+            isEmpty={
+              !data || data.monthly_activity.every((p) => p.new_assets === 0 && p.events === 0)
+            }
+            emptyDescription="Активности за последние 12 месяцев не зафиксировано."
+          >
+            {data && <MonthlyActivityChart data={data.monthly_activity} />}
+          </ChartCard>
 
           <Card>
             <CardHeader className="flex flex-row items-center gap-2">
@@ -94,7 +183,7 @@ export function DashboardPage() {
                   <Skeleton className="h-10 w-full" />
                   <Skeleton className="h-10 w-full" />
                 </div>
-              ) : data.latest_events.length === 0 ? (
+              ) : data && data.latest_events.length === 0 ? (
                 <EmptyState
                   icon={History}
                   title="События ещё не зафиксированы"
@@ -102,7 +191,7 @@ export function DashboardPage() {
                 />
               ) : (
                 <ul className="divide-y">
-                  {data.latest_events.map((event) => (
+                  {data?.latest_events.map((event) => (
                     <li
                       key={event.id}
                       className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"

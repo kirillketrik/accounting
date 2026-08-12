@@ -33,7 +33,7 @@ import { EmptyState } from '@/components/empty-state'
 import { ErrorState } from '@/components/error-state'
 import { StatusBadge } from '@/components/status-badge'
 
-import type { Asset, AssetEvent } from '@/api/types'
+import type { Asset, AssetCustomFieldValue, AssetEvent } from '@/api/types'
 import {
   useAsset,
   useAssetEventCounters,
@@ -51,6 +51,13 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <dd className="text-sm font-medium">{value}</dd>
     </div>
   )
+}
+
+function formatCustomFieldValue(value: AssetCustomFieldValue): string {
+  if (value.value == null) return '—'
+  if (value.field_type === 'boolean') return value.value ? 'Да' : 'Нет'
+  if (value.field_type === 'date') return new Date(value.value as string).toLocaleDateString()
+  return String(value.value)
 }
 
 export function AssetDetailPage() {
@@ -168,6 +175,27 @@ export function AssetDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {!!asset.custom_field_values.length && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Доп. поля
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+              {asset.custom_field_values.map((value) => (
+                <InfoRow
+                  key={value.definition_id}
+                  label={value.name}
+                  value={formatCustomFieldValue(value)}
+                />
+              ))}
+            </dl>
+          </CardContent>
+        </Card>
+      )}
 
       {!!countersQuery.data?.length && (
         <Card>

@@ -8,6 +8,7 @@ from app.repositories.asset import AssetRepository
 from app.repositories.asset_event import AssetEventRepository
 from app.repositories.asset_history import AssetHistoryRepository
 from app.repositories.event_type import EventTypeRepository
+from app.schemas.asset_custom_field import CustomFieldType, coerce_stored_value_json_safe
 from app.schemas.asset_event import (
     AssetEventBulkApply,
     AssetEventBulkCreated,
@@ -122,6 +123,17 @@ class AssetEventService:
                 }
                 for event in reversed(events)
             ],
+            custom_field_values=[
+                {
+                    "definition_id": cfv.definition_id,
+                    "name": cfv.definition.name,
+                    "field_type": cfv.definition.field_type,
+                    "value": coerce_stored_value_json_safe(
+                        cfv.value, CustomFieldType(cfv.definition.field_type)
+                    ),
+                }
+                for cfv in asset.custom_field_values
+            ],
         )
         self.asset_repo.delete(asset)
         self.audit.record(
@@ -133,14 +145,14 @@ class AssetEventService:
         )
 
     def _resolve_targets(
-        self, asset_ids: list[int], inventory_numbers: list[int]
+        self, asset_ids: list[int], inventory_numbers: list[int], asset_type_id: int | None
     ) -> tuple[list[Asset], list[int]]:
         """Merges assets picked explicitly by id with assets matched by inventory
-        number (which may span multiple asset types, since inventory numbers are
-        only unique within a type). Stale ids that no longer exist are dropped
-        silently rather than erroring the whole batch.
+        number, scoped to asset_type_id since inventory numbers are only unique
+        within a type. Stale ids that no longer exist are dropped silently rather
+        than erroring the whole batch.
         """
-        by_inventory = self.asset_repo.list_by_inventory_numbers(inventory_numbers)
+        by_inventory = self.asset_repo.list_by_inventory_numbers(inventory_numbers, asset_type_id)
         found_numbers = {a.inventory_number for a in by_inventory if a.inventory_number is not None}
         not_found = [n for n in inventory_numbers if n not in found_numbers]
 
@@ -151,7 +163,9 @@ class AssetEventService:
         return list(merged.values()), not_found
 
     def bulk_preview(self, data: AssetEventBulkResolveRequest) -> AssetEventBulkPreviewResult:
-        assets, not_found = self._resolve_targets(data.asset_ids, data.inventory_numbers)
+        assets, not_found = self._resolve_targets(
+            data.asset_ids, data.inventory_numbers, data.asset_type_id
+        )
         items = [
             AssetEventBulkPreviewItem(
                 asset_id=asset.id,
@@ -166,7 +180,9 @@ class AssetEventService:
 
     def bulk_apply(self, data: AssetEventBulkApply, current_user: User) -> AssetEventBulkResult:
         self._ensure_event_type_exists(data.event_type_id)
-        assets, not_found = self._resolve_targets(data.asset_ids, data.inventory_numbers)
+        assets, not_found = self._resolve_targets(
+            data.asset_ids, data.inventory_numbers, data.asset_type_id
+        )
 
         created: list[AssetEventBulkCreated] = []
         errors: list[AssetEventBulkError] = [

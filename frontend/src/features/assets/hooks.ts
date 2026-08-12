@@ -6,6 +6,7 @@ import { ApiError } from '@/api/client'
 import type {
   AssetBulkCreateInput,
   AssetEventInput,
+  AssetExportParams,
   AssetInput,
   AssetListParams,
 } from '@/api/types'
@@ -78,6 +79,15 @@ export function useBulkPreviewAssets(payload: AssetBulkCreateInput | null) {
     queryKey: queryKeys.assetBulkPreview(payload ?? { asset_type_id: 0, items: [] }),
     queryFn: () => assetsApi.bulkPreview(payload!),
     enabled: payload !== null,
+    placeholderData: (prev) => prev,
+  })
+}
+
+export function useAssetExportPreview(params: AssetExportParams, enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.assetExportPreview(params),
+    queryFn: () => assetsApi.export(params),
+    enabled,
     placeholderData: (prev) => prev,
   })
 }

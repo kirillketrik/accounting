@@ -14,6 +14,8 @@ from app.db.base import Base  # noqa: E402
 from app.models import (  # noqa: E402,F401
     AppSettings,
     Asset,
+    AssetCustomFieldDefinition,
+    AssetCustomFieldValue,
     AssetEvent,
     AssetHistory,
     AssetNamingRule,

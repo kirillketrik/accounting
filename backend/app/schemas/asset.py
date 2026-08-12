@@ -1,7 +1,14 @@
 from datetime import datetime
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schemas.asset_custom_field import (
+    AssetCustomFieldValueInput,
+    AssetCustomFieldValueRead,
+    CustomFieldType,
+    coerce_stored_value,
+)
 from app.schemas.asset_status import AssetStatusRead
 from app.schemas.asset_type import AssetTypeRead
 from app.schemas.place import PlaceRead
@@ -19,7 +26,7 @@ class AssetBase(BaseModel):
 
 
 class AssetCreate(AssetBase):
-    pass
+    custom_field_values: list[AssetCustomFieldValueInput] = Field(default_factory=list)
 
 
 class AssetUpdate(BaseModel):
@@ -30,6 +37,7 @@ class AssetUpdate(BaseModel):
     status_id: int | None = None
     place_id: int | None = None
     notes: str | None = None
+    custom_field_values: list[AssetCustomFieldValueInput] | None = None
 
 
 class AssetRead(AssetBase):
@@ -41,8 +49,34 @@ class AssetRead(AssetBase):
     status: AssetStatusRead
     place: PlaceRead | None
     responsible_user: UserSummary | None
+    custom_field_values: list[AssetCustomFieldValueRead] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
+
+    @field_validator("custom_field_values", mode="before")
+    @classmethod
+    def _shape_custom_field_values(cls, value: Any) -> list[dict[str, Any]]:
+        """Adapts the raw AssetCustomFieldValue ORM rows (asset.custom_field_values)
+        into the AssetCustomFieldValueRead shape: those rows only carry definition_id
+        and a raw stored string, not the definition's name/field_type or a typed value.
+        """
+        if not value:
+            return []
+        shaped = []
+        for item in value:
+            if isinstance(item, dict):
+                shaped.append(item)
+                continue
+            field_type = CustomFieldType(item.definition.field_type)
+            shaped.append(
+                {
+                    "definition_id": item.definition_id,
+                    "name": item.definition.name,
+                    "field_type": field_type,
+                    "value": coerce_stored_value(item.value, field_type),
+                }
+            )
+        return shaped
 
 
 class AssetWithType(AssetRead):

@@ -2,7 +2,15 @@ import type { AssetBulkItem } from '@/api/types'
 
 export type BulkAssetField = 'name' | 'inventory' | 'serial'
 
-const VALID_FIELDS: BulkAssetField[] = ['name', 'inventory', 'serial']
+export const VALID_FIELDS: BulkAssetField[] = ['name', 'inventory', 'serial']
+
+export const FIELD_LABELS: Record<BulkAssetField, string> = {
+  name: 'Название',
+  inventory: 'Инв. номер',
+  serial: 'Серийный номер',
+}
+
+const TEMPLATE_TOKEN_RE = /\{([a-zA-Z0-9_]+)\}/g
 
 export interface ParsedTemplate {
   fields: BulkAssetField[]
@@ -10,19 +18,15 @@ export interface ParsedTemplate {
 }
 
 /**
- * Splits a template like "{name} {inventory} {serial}" into an ordered list of
- * field tokens using the given separator. Every token must be one of the known
- * field names (no literal text mixed in), matching the positional-split parsing
- * used for each data line.
+ * Extracts the ordered list of {field} placeholders from a template like
+ * "{name} {inventory} {serial}". Placeholder extraction is independent of the
+ * separator — literal text around/between placeholders is purely cosmetic and
+ * doesn't affect validation or line parsing, only the positional field order does.
  */
 export function parseTemplate(template: string, separator: string): ParsedTemplate {
   if (!separator) return { fields: [], error: 'Укажите разделитель' }
 
-  const tokens = template
-    .split(separator)
-    .map((t) => t.trim())
-    .filter((t) => t.length > 0)
-    .map((t) => t.replace(/^\{|\}$/g, ''))
+  const tokens = [...template.matchAll(TEMPLATE_TOKEN_RE)].map((m) => m[1])
 
   if (tokens.length === 0) {
     return { fields: [], error: 'Укажите хотя бы одно поле в шаблоне' }
@@ -39,6 +43,22 @@ export function parseTemplate(template: string, separator: string): ParsedTempla
   }
 
   return { fields: tokens as BulkAssetField[] }
+}
+
+/**
+ * Best-effort ordered list of known fields present in a template — used to
+ * initialize/derive the field builder UI. Unlike `parseTemplate`, this never
+ * errors: unknown placeholders and repeats are silently dropped.
+ */
+export function extractTemplateFields(template: string): BulkAssetField[] {
+  const tokens = [...template.matchAll(TEMPLATE_TOKEN_RE)].map((m) => m[1])
+  const fields: BulkAssetField[] = []
+  for (const t of tokens) {
+    if (VALID_FIELDS.includes(t as BulkAssetField) && !fields.includes(t as BulkAssetField)) {
+      fields.push(t as BulkAssetField)
+    }
+  }
+  return fields
 }
 
 export interface ParsedAssetLine {

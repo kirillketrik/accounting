@@ -1,5 +1,4 @@
-                        Move profile button from upper right corner to the bottom of the navbar, after "Админка". Left only fullname there.
-                        Also create page for profile management, changing first and last name, changing password.
-                        - Профиль
-                        -- Редактировать (link to our new page)
-                        -- Выйти (just logout after dialog ensureance)
+As you can see we have bulk creation for assets and for events, i decided that we need bulk creation for rule names.
+Create page, use template builder, add method to backend. Also we need preview tab as on previous bulk pages.
+
+NEW FEATURE: Add theme changer to navbar. And then i couple of new themes: just dark, dark bloody and dark neon (some elements should have neon effect).

@@ -55,12 +55,13 @@ import { useAssetTypes } from '@/features/asset-types/hooks'
 import { useEventTypes } from '@/features/event-types/hooks'
 import { useAssets } from '@/features/assets/hooks'
 import { useBulkApplyEvents, useBulkPreviewEvents } from '@/features/assets/event-hooks'
-import { useSettings } from '@/features/settings/hooks'
+import { useSettings, useUpdateSettings } from '@/features/settings/hooks'
 import {
   bulkEventFormSchema,
   type BulkEventFormValues,
 } from '@/features/assets/bulk-event-schema'
 import { nowLocalIso } from '@/lib/datetime'
+import type { AppSettings, AppSettingsInput } from '@/api/types'
 
 const DEFAULT_PAGE_SIZE = 10
 const DEFAULT_SEPARATOR = '\n'
@@ -90,12 +91,24 @@ function presetForSeparator(separator: string): string {
   return preset?.value ?? 'custom'
 }
 
+function toSettingsInput(settings: AppSettings, overrides: Partial<AppSettingsInput>): AppSettingsInput {
+  return {
+    default_bulk_asset_template: settings.default_bulk_asset_template,
+    default_bulk_asset_separator: settings.default_bulk_asset_separator,
+    default_bulk_event_separator: settings.default_bulk_event_separator,
+    default_export_template: settings.default_export_template,
+    default_export_separator: settings.default_export_separator,
+    ...overrides,
+  }
+}
+
 export function BulkEventCreatePage() {
   const navigate = useNavigate()
   const { data: eventTypes } = useEventTypes()
   const { data: assetTypes } = useAssetTypes()
   const { data: assetStatuses } = useAssetStatuses()
   const { data: settings } = useSettings()
+  const updateSettings = useUpdateSettings()
   const bulkApply = useBulkApplyEvents()
 
   const [tab, setTab] = useState<'select' | 'preview'>('select')
@@ -119,6 +132,7 @@ export function BulkEventCreatePage() {
       description: '',
       separator: DEFAULT_SEPARATOR,
       raw_text: '',
+      inventory_asset_type_id: null,
     },
   })
 
@@ -148,6 +162,13 @@ export function BulkEventCreatePage() {
   function applyCustomSeparator(value: string) {
     setCustomSeparator(value)
     form.setValue('separator', value)
+  }
+
+  async function handleSetDefaultSeparator() {
+    if (!settings) return
+    await updateSettings.mutateAsync(
+      toSettingsInput(settings, { default_bulk_event_separator: form.getValues('separator') })
+    )
   }
 
   const { data, isPending, isError, error, refetch, isPlaceholderData } = useAssets({
@@ -208,6 +229,7 @@ export function BulkEventCreatePage() {
 
   const rawText = form.watch('raw_text')
   const separator = form.watch('separator')
+  const inventoryAssetTypeId = form.watch('inventory_asset_type_id')
 
   const inventoryNumbers = useMemo(() => {
     if (!separator) return []
@@ -224,10 +246,17 @@ export function BulkEventCreatePage() {
     [selectedIds]
   )
 
+  const inventoryNumbersReady = inventoryNumbers.length === 0 || inventoryAssetTypeId !== null
+
   const resolvePayload = useMemo(() => {
     if (selectedIdsArray.length === 0 && inventoryNumbers.length === 0) return null
-    return { asset_ids: selectedIdsArray, inventory_numbers: inventoryNumbers }
-  }, [selectedIdsArray, inventoryNumbers])
+    if (!inventoryNumbersReady) return null
+    return {
+      asset_ids: selectedIdsArray,
+      inventory_numbers: inventoryNumbers,
+      asset_type_id: inventoryAssetTypeId,
+    }
+  }, [selectedIdsArray, inventoryNumbers, inventoryNumbersReady, inventoryAssetTypeId])
 
   const [debouncedPayload, setDebouncedPayload] = useState<typeof resolvePayload>(null)
   useEffect(() => {
@@ -241,7 +270,8 @@ export function BulkEventCreatePage() {
 
   const selectedEventType = eventTypes?.find((t) => t.id === form.watch('event_type_id'))
 
-  const canSubmit = selectedIdsArray.length > 0 || inventoryNumbers.length > 0
+  const canSubmit =
+    (selectedIdsArray.length > 0 || inventoryNumbers.length > 0) && inventoryNumbersReady
 
   async function onSubmit(values: BulkEventFormValues) {
     const result = await bulkApply.mutateAsync({
@@ -250,6 +280,7 @@ export function BulkEventCreatePage() {
       description: values.description || null,
       asset_ids: selectedIdsArray,
       inventory_numbers: inventoryNumbers,
+      asset_type_id: values.inventory_asset_type_id,
     })
 
     setSubmitErrors(result.errors.map((e) => e.inventory_number))
@@ -528,8 +559,54 @@ export function BulkEventCreatePage() {
                     </p>
                   </div>
 
+                  <FormField
+                    control={form.control}
+                    name="inventory_asset_type_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Тип актива</FormLabel>
+                        <Select
+                          items={Object.fromEntries(
+                            (assetTypes ?? []).map((type) => [String(type.id), type.name])
+                          )}
+                          value={field.value ? String(field.value) : ''}
+                          onValueChange={(value) => field.onChange(value ? Number(value) : null)}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="w-full sm:w-80">
+                              <SelectValue placeholder="Выберите тип актива" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {assetTypes?.map((type) => (
+                              <SelectItem key={type.id} value={String(type.id)}>
+                                {type.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Инвентарные номера уникальны только в пределах одного типа актива.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <div>
-                    <Label>Разделитель</Label>
+                    <div className="flex items-center justify-between">
+                      <Label>Разделитель</Label>
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-xs"
+                        onClick={handleSetDefaultSeparator}
+                        disabled={!settings || updateSettings.isPending}
+                      >
+                        Установить по умолчанию
+                      </Button>
+                    </div>
                     <div className="mt-1.5 flex items-center gap-2">
                       <Select
                         items={Object.fromEntries(SEPARATOR_PRESETS.map((p) => [p.value, p.label]))}

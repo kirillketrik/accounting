@@ -1,5 +1,7 @@
 from app.models.app_settings import AppSettings
 from app.models.asset import Asset
+from app.models.asset_custom_field_definition import AssetCustomFieldDefinition
+from app.models.asset_custom_field_value import AssetCustomFieldValue
 from app.models.asset_event import AssetEvent
 from app.models.asset_history import AssetHistory
 from app.models.asset_naming_rule import AssetNamingRule
@@ -15,6 +17,8 @@ from app.models.user import User
 __all__ = [
     "AppSettings",
     "Asset",
+    "AssetCustomFieldDefinition",
+    "AssetCustomFieldValue",
     "AssetEvent",
     "AssetHistory",
     "AssetNamingRule",

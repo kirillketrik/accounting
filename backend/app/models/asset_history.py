@@ -29,6 +29,7 @@ class AssetHistory(Base):
     asset_created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     disposed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     events: Mapped[list[dict]] = mapped_column(JSON, nullable=False, default=list)
+    custom_field_values: Mapped[list[dict]] = mapped_column(JSON, nullable=False, default=list)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

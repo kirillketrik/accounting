@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { ScrollText, Search } from 'lucide-react'
 
 import { Input } from '@/components/ui/input'
@@ -32,10 +32,12 @@ import {
   type AuditEntityType,
 } from '@/api/types'
 import { useAuditLogs } from '@/features/audit-log/hooks'
+import { useAuth } from '@/features/auth/useAuth'
 
 const DEFAULT_PAGE_SIZE = 20
 
 export function AuditLogPage() {
+  const { user } = useAuth()
   const navigate = useNavigate()
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
@@ -58,6 +60,10 @@ export function AuditLogPage() {
   })
 
   const hasFilters = search !== '' || entityType !== 'all' || action !== 'all'
+
+  if (!user?.is_admin) {
+    return <Navigate to="/" replace />
+  }
 
   return (
     <div className="space-y-6">

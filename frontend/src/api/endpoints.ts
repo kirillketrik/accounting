@@ -7,6 +7,9 @@ import type {
   AssetBulkDeleteResult,
   AssetBulkPreviewResult,
   AssetBulkResult,
+  AssetCustomFieldDefinition,
+  AssetCustomFieldDefinitionInput,
+  AssetCustomFieldDefinitionUpdateInput,
   AssetEvent,
   AssetEventBulkApplyInput,
   AssetEventBulkPreviewResult,
@@ -91,6 +94,18 @@ export const assetNamingRulesApi = {
   update: (id: number, data: Partial<AssetNamingRuleInput>) =>
     apiClient.put<AssetNamingRule>(`/asset-naming-rules/${id}`, data),
   delete: (id: number) => apiClient.delete<void>(`/asset-naming-rules/${id}`),
+}
+
+export const assetCustomFieldDefinitionsApi = {
+  list: (assetTypeId?: number) =>
+    apiClient.get<AssetCustomFieldDefinition[]>(
+      `/asset-custom-field-definitions${buildQuery({ asset_type_id: assetTypeId })}`
+    ),
+  create: (data: AssetCustomFieldDefinitionInput) =>
+    apiClient.post<AssetCustomFieldDefinition>('/asset-custom-field-definitions', data),
+  update: (id: number, data: AssetCustomFieldDefinitionUpdateInput) =>
+    apiClient.patch<AssetCustomFieldDefinition>(`/asset-custom-field-definitions/${id}`, data),
+  delete: (id: number) => apiClient.delete<void>(`/asset-custom-field-definitions/${id}`),
 }
 
 export const eventTypesApi = {

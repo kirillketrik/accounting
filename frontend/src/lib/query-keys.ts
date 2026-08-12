@@ -1,6 +1,7 @@
 import type {
   AssetBulkCreateInput,
   AssetEventBulkResolveInput,
+  AssetExportParams,
   AssetHistoryListParams,
   AssetListParams,
   AuditLogListParams,
@@ -12,10 +13,14 @@ export const queryKeys = {
   assetStatuses: ['asset-statuses'] as const,
   places: ['places'] as const,
   assetNamingRules: ['asset-naming-rules'] as const,
+  assetCustomFieldDefinitions: ['asset-custom-field-definitions'] as const,
+  assetCustomFieldDefinitionsByType: (assetTypeId: number) =>
+    ['asset-custom-field-definitions', assetTypeId] as const,
   eventTypes: ['event-types'] as const,
   assets: (params: AssetListParams) => ['assets', params] as const,
   asset: (id: number) => ['assets', id] as const,
   assetBulkPreview: (payload: AssetBulkCreateInput) => ['assets', 'bulk-preview', payload] as const,
+  assetExportPreview: (params: AssetExportParams) => ['assets', 'export-preview', params] as const,
   assetEvents: (assetId: number) => ['assets', assetId, 'events'] as const,
   eventBulkPreview: (payload: AssetEventBulkResolveInput) =>
     ['events', 'bulk-preview', payload] as const,

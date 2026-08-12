@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,7 @@ import { AuditActionBadge } from '@/components/audit-action-badge'
 import { AUDIT_ENTITY_TYPE_LABELS } from '@/api/types'
 import { useAuditLog } from '@/features/audit-log/hooks'
 import { auditFieldLabel, formatAuditValue } from '@/features/audit-log/fields'
+import { useAuth } from '@/features/auth/useAuth'
 
 function isDiffShape(changes: Record<string, unknown>): boolean {
   return (
@@ -66,11 +67,16 @@ function DiffTable({ diff }: { diff: Record<string, { before: unknown; after: un
 }
 
 export function AuditLogDetailPage() {
+  const { user } = useAuth()
   const params = useParams<{ id: string }>()
   const auditLogId = Number(params.id)
   const navigate = useNavigate()
 
   const query = useAuditLog(auditLogId)
+
+  if (!user?.is_admin) {
+    return <Navigate to="/" replace />
+  }
 
   if (!Number.isFinite(auditLogId)) {
     return <ErrorState message="Некорректный идентификатор записи журнала." />

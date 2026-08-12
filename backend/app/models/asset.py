@@ -48,3 +48,6 @@ class Asset(Base):
     events: Mapped[list["AssetEvent"]] = relationship(
         back_populates="asset", cascade="all, delete-orphan", order_by="AssetEvent.event_date.desc()"
     )
+    custom_field_values: Mapped[list["AssetCustomFieldValue"]] = relationship(
+        back_populates="asset", cascade="all, delete-orphan"
+    )

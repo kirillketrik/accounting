@@ -40,11 +40,14 @@ class AssetEventWithType(AssetEventRead):
 class AssetEventBulkTargets(BaseModel):
     asset_ids: list[int] = Field(default_factory=list)
     inventory_numbers: list[int] = Field(default_factory=list)
+    asset_type_id: int | None = None
 
     @model_validator(mode="after")
     def _ensure_targets(self) -> "AssetEventBulkTargets":
         if not self.asset_ids and not self.inventory_numbers:
             raise ValueError("Specify at least one asset or inventory number")
+        if self.inventory_numbers and self.asset_type_id is None:
+            raise ValueError("Specify an asset type to resolve inventory numbers")
         return self
 
 

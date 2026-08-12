@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.asset_custom_field import AssetCustomFieldHistoryEntry
+
 
 class AssetHistoryEvent(BaseModel):
     event_type_name: str
@@ -25,4 +27,5 @@ class AssetHistoryRead(BaseModel):
     asset_created_at: datetime
     disposed_at: datetime
     events: list[AssetHistoryEvent]
+    custom_field_values: list[AssetCustomFieldHistoryEntry]
     created_at: datetime

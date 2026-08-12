@@ -98,6 +98,42 @@ export interface EventTypeInput {
   counter_label?: string | null
 }
 
+export type CustomFieldType = 'text' | 'number' | 'date' | 'boolean'
+
+export interface AssetCustomFieldDefinition {
+  id: number
+  asset_type_id: number
+  name: string
+  field_type: CustomFieldType
+  is_required: boolean
+}
+
+export interface AssetCustomFieldDefinitionInput {
+  asset_type_id: number
+  name: string
+  field_type: CustomFieldType
+  is_required: boolean
+}
+
+export interface AssetCustomFieldDefinitionUpdateInput {
+  name?: string
+  is_required?: boolean
+}
+
+export type CustomFieldValue = string | number | boolean | null
+
+export interface AssetCustomFieldValue {
+  definition_id: number
+  name: string
+  field_type: CustomFieldType
+  value: CustomFieldValue
+}
+
+export interface AssetCustomFieldValueInput {
+  definition_id: number
+  value: CustomFieldValue
+}
+
 export interface AssetNamingRule {
   id: number
   asset_type_id: number
@@ -128,6 +164,7 @@ export interface Asset {
   place: Place | null
   responsible_user: UserSummary | null
   notes: string | null
+  custom_field_values: AssetCustomFieldValue[]
   created_at: string
   updated_at: string
   asset_type: AssetType
@@ -141,6 +178,7 @@ export interface AssetInput {
   status_id?: number | null
   place_id?: number | null
   notes?: string | null
+  custom_field_values?: AssetCustomFieldValueInput[]
 }
 
 export interface AssetEvent {
@@ -203,6 +241,25 @@ export interface AssetsByStatus {
   count: number
 }
 
+export interface AssetsByType {
+  asset_type_id: number
+  asset_type_name: string
+  count: number
+}
+
+export interface EventsByType {
+  event_type_id: number
+  event_type_name: string
+  count: number
+}
+
+export interface MonthlyActivityPoint {
+  month: string
+  new_assets: number
+  events: number
+  disposals: number
+}
+
 export interface LatestEvent {
   id: number
   asset_id: number
@@ -215,7 +272,12 @@ export interface LatestEvent {
 
 export interface DashboardSummary {
   total_assets: number
+  total_events: number
+  total_disposals: number
   assets_by_status: AssetsByStatus[]
+  assets_by_type: AssetsByType[]
+  events_by_type: EventsByType[]
+  monthly_activity: MonthlyActivityPoint[]
   latest_events: LatestEvent[]
 }
 
@@ -243,7 +305,6 @@ export interface AssetHistoryListParams {
 
 export interface AppSettings {
   id: number
-  default_asset_type_id: number | null
   default_bulk_asset_template: string | null
   default_bulk_asset_separator: string | null
   default_bulk_event_separator: string | null
@@ -252,7 +313,6 @@ export interface AppSettings {
 }
 
 export interface AppSettingsInput {
-  default_asset_type_id?: number | null
   default_bulk_asset_template?: string | null
   default_bulk_asset_separator?: string | null
   default_bulk_event_separator?: string | null
@@ -289,6 +349,7 @@ export interface AssetBulkResult {
 export interface AssetEventBulkResolveInput {
   asset_ids: number[]
   inventory_numbers: number[]
+  asset_type_id?: number | null
 }
 
 export interface AssetEventBulkApplyInput extends AssetEventBulkResolveInput {
