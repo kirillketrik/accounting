@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -8,6 +10,13 @@ from app.repositories.base import BaseRepository
 class AssetHistoryRepository(BaseRepository[AssetHistory]):
     def __init__(self, db: Session) -> None:
         super().__init__(db, AssetHistory)
+
+    def disposed_dates_since(self, since: datetime) -> list[datetime]:
+        stmt = select(AssetHistory.disposed_at).where(AssetHistory.disposed_at >= since)
+        return list(self.db.scalars(stmt))
+
+    def total_count(self) -> int:
+        return self.db.scalar(select(func.count()).select_from(AssetHistory)) or 0
 
     def search(self, *, page: int = 1, page_size: int = 20) -> tuple[list[AssetHistory], int]:
         total = self.db.scalar(select(func.count()).select_from(AssetHistory)) or 0
