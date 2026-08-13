@@ -17,6 +17,7 @@ import { BulkAssetCreatePage } from '@/routes/BulkAssetCreatePage'
 import { BulkEventCreatePage } from '@/routes/BulkEventCreatePage'
 import { DashboardPage } from '@/routes/DashboardPage'
 import { EventTypesPage } from '@/routes/EventTypesPage'
+import { ExportAssetsPage } from '@/routes/ExportAssetsPage'
 import { NotFoundPage } from '@/routes/NotFoundPage'
 import { PlacesPage } from '@/routes/PlacesPage'
 import { ProfilePage } from '@/routes/ProfilePage'
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
           { path: 'assets', element: <AssetsPage /> },
           { path: 'assets/bulk-add', element: <BulkAssetCreatePage /> },
           { path: 'assets/bulk-events', element: <BulkEventCreatePage /> },
+          { path: 'assets/export', element: <ExportAssetsPage /> },
           { path: 'assets/:id', element: <AssetDetailPage /> },
           { path: 'asset-types', element: <AssetTypesPage /> },
           { path: 'places', element: <PlacesPage /> },
