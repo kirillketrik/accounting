@@ -66,6 +66,7 @@ const previewAsset: Asset = {
 
 function toSettingsInput(settings: AppSettings, overrides: Partial<AppSettingsInput>): AppSettingsInput {
   return {
+    default_asset_type_id: settings.default_asset_type_id,
     default_bulk_asset_template: settings.default_bulk_asset_template,
     default_bulk_asset_separator: settings.default_bulk_asset_separator,
     default_bulk_event_separator: settings.default_bulk_event_separator,
