@@ -48,7 +48,9 @@ class AssetRepository(BaseRepository[Asset]):
         )
         return list(self.db.scalars(stmt).unique())
 
-    def list_by_inventory_numbers(self, numbers: list[int]) -> list[Asset]:
+    def list_by_inventory_numbers(
+        self, numbers: list[int], asset_type_id: int | None = None
+    ) -> list[Asset]:
         if not numbers:
             return []
         stmt = (
@@ -56,6 +58,8 @@ class AssetRepository(BaseRepository[Asset]):
             .options(joinedload(Asset.asset_type), joinedload(Asset.status))
             .where(Asset.inventory_number.in_(numbers))
         )
+        if asset_type_id is not None:
+            stmt = stmt.where(Asset.asset_type_id == asset_type_id)
         return list(self.db.scalars(stmt).unique())
 
     def list_inventory_numbers(self, asset_type_id: int) -> list[int]:
