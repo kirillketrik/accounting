@@ -289,6 +289,7 @@ export interface AssetBulkResult {
 export interface AssetEventBulkResolveInput {
   asset_ids: number[]
   inventory_numbers: number[]
+  asset_type_id?: number | null
 }
 
 export interface AssetEventBulkApplyInput extends AssetEventBulkResolveInput {
