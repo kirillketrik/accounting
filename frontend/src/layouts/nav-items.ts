@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   Boxes,
+  Download,
   Package2,
   PackagePlus,
   ListPlus,
@@ -39,6 +40,7 @@ export const navItems: NavItem[] = [
         children: [
           { label: 'Массовое добавление активов', to: '/assets/bulk-add', icon: PackagePlus },
           { label: 'Массовое добавление событий', to: '/assets/bulk-events', icon: ListPlus },
+          { label: 'Экспорт активов', to: '/assets/export', icon: Download },
           { label: 'Фабрика названий', to: '/asset-naming-rules', icon: Wand2 },
         ],
       },

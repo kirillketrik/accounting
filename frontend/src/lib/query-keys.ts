@@ -1,6 +1,7 @@
 import type {
   AssetBulkCreateInput,
   AssetEventBulkResolveInput,
+  AssetExportParams,
   AssetHistoryListParams,
   AssetListParams,
   AuditLogListParams,
@@ -16,6 +17,7 @@ export const queryKeys = {
   assets: (params: AssetListParams) => ['assets', params] as const,
   asset: (id: number) => ['assets', id] as const,
   assetBulkPreview: (payload: AssetBulkCreateInput) => ['assets', 'bulk-preview', payload] as const,
+  assetExportPreview: (params: AssetExportParams) => ['assets', 'export-preview', params] as const,
   assetEvents: (assetId: number) => ['assets', assetId, 'events'] as const,
   eventBulkPreview: (payload: AssetEventBulkResolveInput) =>
     ['events', 'bulk-preview', payload] as const,

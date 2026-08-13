@@ -9,7 +9,7 @@ export type ExportField =
   | 'responsible_person'
   | 'asset_type'
 
-const VALID_FIELDS: ExportField[] = [
+export const EXPORT_VALID_FIELDS: ExportField[] = [
   'name',
   'inventory_number',
   'serial_number',
@@ -29,34 +29,50 @@ export const EXPORT_FIELD_LABELS: Record<ExportField, string> = {
   asset_type: 'Тип актива',
 }
 
+const TEMPLATE_TOKEN_RE = /\{([a-zA-Z0-9_]+)\}/g
+
 export interface ParsedExportTemplate {
   fields: ExportField[]
   error?: string
 }
 
 /**
- * Mirrors the bulk-import template convention: an ordered list of `{field}` tokens
- * separated by `separator`, used both to describe and to produce each output line.
+ * Extracts the ordered list of {field} placeholders from a template like
+ * "{name} {inventory_number}". Placeholder extraction is independent of the
+ * separator — literal text around/between placeholders is purely cosmetic and
+ * doesn't affect validation, only the positional field order does.
  */
 export function parseExportTemplate(template: string, separator: string): ParsedExportTemplate {
   if (!separator) return { fields: [], error: 'Укажите разделитель' }
 
-  const tokens = template
-    .split(separator)
-    .map((t) => t.trim())
-    .filter((t) => t.length > 0)
-    .map((t) => t.replace(/^\{|\}$/g, ''))
+  const tokens = [...template.matchAll(TEMPLATE_TOKEN_RE)].map((m) => m[1])
 
   if (tokens.length === 0) {
     return { fields: [], error: 'Укажите хотя бы одно поле в шаблоне' }
   }
 
-  const invalid = tokens.filter((t) => !VALID_FIELDS.includes(t as ExportField))
+  const invalid = tokens.filter((t) => !EXPORT_VALID_FIELDS.includes(t as ExportField))
   if (invalid.length > 0) {
     return { fields: [], error: `Неизвестные поля: ${invalid.join(', ')}` }
   }
 
   return { fields: tokens as ExportField[] }
+}
+
+/**
+ * Best-effort ordered list of known fields present in a template — used to
+ * initialize/derive the field builder UI. Unlike `parseExportTemplate`, this
+ * never errors: unknown placeholders and repeats are silently dropped.
+ */
+export function extractExportTemplateFields(template: string): ExportField[] {
+  const tokens = [...template.matchAll(TEMPLATE_TOKEN_RE)].map((m) => m[1])
+  const fields: ExportField[] = []
+  for (const t of tokens) {
+    if (EXPORT_VALID_FIELDS.includes(t as ExportField) && !fields.includes(t as ExportField)) {
+      fields.push(t as ExportField)
+    }
+  }
+  return fields
 }
 
 function exportFieldValue(asset: Asset, field: ExportField): string {
