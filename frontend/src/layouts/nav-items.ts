@@ -49,7 +49,7 @@ export const navItems: NavItem[] = [
       { label: 'История', to: '/history', icon: Archive },
     ],
   },
-  { label: 'Журнал действий', to: '/audit-log', icon: ScrollText },
+  { label: 'Журнал действий', to: '/audit-log', icon: ScrollText, adminOnly: true },
   { label: 'Настройки', to: '/settings', icon: Settings },
   {
     label: 'Админка',
