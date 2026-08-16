@@ -6,7 +6,6 @@ from app.models.asset_naming_rule import AssetNamingRule
 from app.models.asset_status import AssetStatus
 from app.models.asset_type import AssetType
 from app.models.audit_log import AuditLog
-from app.models.backup import BackupRecipient, BackupRun, BackupSettings
 from app.models.event_type import EventType
 from app.models.place import Place
 from app.models.session import UserSession
@@ -21,9 +20,6 @@ __all__ = [
     "AssetStatus",
     "AssetType",
     "AuditLog",
-    "BackupRecipient",
-    "BackupRun",
-    "BackupSettings",
     "EventType",
     "Place",
     "User",

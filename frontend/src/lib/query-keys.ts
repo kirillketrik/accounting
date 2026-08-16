@@ -5,7 +5,6 @@ import type {
   AssetHistoryListParams,
   AssetListParams,
   AuditLogListParams,
-  BackupRunListParams,
 } from '@/api/types'
 
 export const queryKeys = {
@@ -30,7 +29,4 @@ export const queryKeys = {
   settings: ['settings'] as const,
   authMe: ['auth', 'me'] as const,
   users: ['users'] as const,
-  backupSettings: ['backups', 'settings'] as const,
-  backupRecipients: (settingsId: number) => ['backups', 'settings', settingsId, 'recipients'] as const,
-  backupRuns: (params: BackupRunListParams) => ['backups', 'runs', params] as const,
 }
