@@ -4,6 +4,32 @@ export type BulkAssetField = 'name' | 'inventory' | 'serial'
 
 const VALID_FIELDS: BulkAssetField[] = ['name', 'inventory', 'serial']
 
+export const BULK_ASSET_VALID_FIELDS: BulkAssetField[] = VALID_FIELDS
+
+export const BULK_ASSET_FIELD_LABELS: Record<BulkAssetField, string> = {
+  name: 'Название',
+  inventory: 'Инвентарный номер',
+  serial: 'Серийный номер',
+}
+
+const TEMPLATE_TOKEN_RE = /\{([a-zA-Z0-9_]+)\}/g
+
+/**
+ * Best-effort ordered list of known fields present in a template — used to
+ * initialize/derive the template builder UI. Unlike `parseTemplate`, this
+ * never errors: unknown placeholders and repeats are silently dropped.
+ */
+export function extractBulkAssetTemplateFields(template: string): BulkAssetField[] {
+  const tokens = [...template.matchAll(TEMPLATE_TOKEN_RE)].map((m) => m[1])
+  const fields: BulkAssetField[] = []
+  for (const t of tokens) {
+    if (VALID_FIELDS.includes(t as BulkAssetField) && !fields.includes(t as BulkAssetField)) {
+      fields.push(t as BulkAssetField)
+    }
+  }
+  return fields
+}
+
 export interface ParsedTemplate {
   fields: BulkAssetField[]
   error?: string

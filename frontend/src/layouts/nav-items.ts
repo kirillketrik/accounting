@@ -11,7 +11,6 @@ import {
   Flag,
   Archive,
   ScrollText,
-  Settings,
   Users,
   Wand2,
   Shield,
@@ -51,7 +50,6 @@ export const navItems: NavItem[] = [
     ],
   },
   { label: 'Журнал действий', to: '/audit-log', icon: ScrollText, adminOnly: true },
-  { label: 'Настройки', to: '/settings', icon: Settings },
   {
     label: 'Админка',
     icon: Shield,

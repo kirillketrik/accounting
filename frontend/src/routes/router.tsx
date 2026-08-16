@@ -20,7 +20,6 @@ import { ExportAssetsPage } from '@/routes/ExportAssetsPage'
 import { NotFoundPage } from '@/routes/NotFoundPage'
 import { PlacesPage } from '@/routes/PlacesPage'
 import { ProfilePage } from '@/routes/ProfilePage'
-import { SettingsPage } from '@/routes/SettingsPage'
 import { UsersPage } from '@/routes/UsersPage'
 
 export const router = createBrowserRouter([
@@ -47,7 +46,6 @@ export const router = createBrowserRouter([
           { path: 'history/:id', element: <AssetHistoryDetailPage /> },
           { path: 'audit-log', element: <AuditLogPage /> },
           { path: 'audit-log/:id', element: <AuditLogDetailPage /> },
-          { path: 'settings', element: <SettingsPage /> },
           { path: 'profile', element: <ProfilePage /> },
           { path: 'users', element: <UsersPage /> },
           { path: '*', element: <NotFoundPage /> },

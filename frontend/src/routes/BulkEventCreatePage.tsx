@@ -286,6 +286,14 @@ export function BulkEventCreatePage() {
 
     setSubmitErrors(result.errors.map((e) => e.inventory_number))
     if (result.errors.length === 0) {
+      if (
+        settings &&
+        values.separator !== (settings.default_bulk_event_separator || DEFAULT_SEPARATOR)
+      ) {
+        updateSettings.mutate(
+          toSettingsInput(settings, { default_bulk_event_separator: values.separator })
+        )
+      }
       navigate('/assets')
     }
   }
