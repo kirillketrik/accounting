@@ -5,6 +5,16 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Учёт активов</title>
+    <script>
+      (function () {
+        var THEMES = ['light', 'dark', 'light-bloody', 'dark-bloody', 'cyberpunk', 'pixel', 'liquid-glass'];
+        var DARK_THEMES = ['dark', 'dark-bloody', 'cyberpunk'];
+        var stored = localStorage.getItem('ui-theme');
+        var theme = THEMES.indexOf(stored) !== -1 ? stored : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        if (DARK_THEMES.indexOf(theme) !== -1) document.documentElement.classList.add('dark');
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

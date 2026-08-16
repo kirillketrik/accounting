@@ -3,6 +3,7 @@ import { Menu } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet'
+import { ThemeSwitcher } from '@/components/theme-switcher'
 import { SidebarNav } from '@/layouts/SidebarNav'
 import { navItems, type NavItem } from '@/layouts/nav-items'
 
@@ -46,6 +47,7 @@ export function TopNav() {
         </SheetContent>
       </Sheet>
       <h1 className="text-base font-semibold">{currentTitle(location.pathname)}</h1>
+      <ThemeSwitcher />
     </header>
   )
 }

@@ -8,6 +8,7 @@ import './index.css'
 import { router } from '@/routes/router'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider } from '@/features/auth/useAuth'
+import { ThemeProvider } from '@/features/theme/theme-provider'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,10 +22,12 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <RouterProvider router={router} />
-      </AuthProvider>
-      <Toaster richColors position="top-right" />
+      <ThemeProvider>
+        <AuthProvider>
+          <RouterProvider router={router} />
+        </AuthProvider>
+        <Toaster richColors position="top-right" />
+      </ThemeProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   </StrictMode>

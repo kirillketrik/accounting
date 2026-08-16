@@ -46,6 +46,7 @@ function SearchableSelect({
       disabled={disabled}
     >
       <Combobox.Trigger
+        data-slot="select-trigger"
         className={cn(
           "flex h-8 w-full items-center justify-between gap-1.5 rounded-lg border border-input bg-transparent py-2 pr-2 pl-2.5 text-sm whitespace-nowrap transition-colors outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 data-placeholder:text-muted-foreground dark:bg-input/30 dark:hover:bg-input/50",
           className
@@ -62,7 +63,9 @@ function SearchableSelect({
       </Combobox.Trigger>
       <Combobox.Portal>
         <Combobox.Positioner className="isolate z-50" sideOffset={4} align="start">
-          <Combobox.Popup className="w-(--anchor-width) min-w-48 origin-(--transform-origin) overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95">
+          <Combobox.Popup
+            data-slot="select-content"
+            className="w-(--anchor-width) min-w-48 origin-(--transform-origin) overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95">
             <div className="border-b p-1">
               <Combobox.Input
                 placeholder={searchPlaceholder}
