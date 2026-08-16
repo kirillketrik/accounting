@@ -12,7 +12,6 @@ import { AssetTypesPage } from '@/routes/AssetTypesPage'
 import { AssetsPage } from '@/routes/AssetsPage'
 import { AuditLogDetailPage } from '@/routes/AuditLogDetailPage'
 import { AuditLogPage } from '@/routes/AuditLogPage'
-import { BackupsPage } from '@/routes/BackupsPage'
 import { BulkAssetCreatePage } from '@/routes/BulkAssetCreatePage'
 import { BulkEventCreatePage } from '@/routes/BulkEventCreatePage'
 import { DashboardPage } from '@/routes/DashboardPage'
@@ -51,7 +50,6 @@ export const router = createBrowserRouter([
           { path: 'settings', element: <SettingsPage /> },
           { path: 'profile', element: <ProfilePage /> },
           { path: 'users', element: <UsersPage /> },
-          { path: 'backups', element: <BackupsPage /> },
           { path: '*', element: <NotFoundPage /> },
         ],
       },

@@ -10,7 +10,6 @@ import {
   ListTree,
   Flag,
   Archive,
-  DatabaseBackup,
   ScrollText,
   Settings,
   Users,
@@ -59,7 +58,6 @@ export const navItems: NavItem[] = [
     adminOnly: true,
     children: [
       { label: 'Пользователи', to: '/users', icon: Users },
-      { label: 'Резервные копии', to: '/backups', icon: DatabaseBackup },
     ],
   },
 ]

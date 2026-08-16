@@ -7,7 +7,7 @@ through the UI, with no code changes.
 
 ## Tech Stack
 
-**Backend:** FastAPI, SQLAlchemy 2.x, SQLite, Alembic, Pydantic v2
+**Backend:** FastAPI, SQLAlchemy 2.x, PostgreSQL, Alembic, Pydantic v2
 **Frontend:** React, React Router v7, TypeScript, Vite, shadcn/ui, Tailwind CSS, TanStack Query,
 React Hook Form, Zod
 
@@ -116,11 +116,11 @@ start.bat dev         :: development mode: hot reload on :5173 (frontend) and :8
 What each mode does:
 
 - **Prod** (`docker-compose.yml`) — builds the backend and frontend into optimized images
-  (frontend served by nginx), runs Alembic migrations on boot, and persists the SQLite database
-  in a named Docker volume (`backend_data`). The app is served on port 80 by default; set
+  (frontend served by nginx), runs Alembic migrations on boot, and persists Postgres data in a
+  named Docker volume (`postgres_data`). The app is served on port 80 by default; set
   `FRONTEND_PORT` (copy the root `.env.example` to `.env`) to use a different port. Both compose
-  files load that same root `.env` into the backend/celery/frontend containers via `env_file`, so
-  it's the single place to configure the whole stack. Once it's up, the script prints both a
+  files load that same root `.env` into the backend/frontend containers via `env_file`, so it's
+  the single place to configure the whole stack. Once it's up, the script prints both a
   `localhost` URL and a LAN URL so you can share the app with colleagues on the same network.
 - **Dev** (`docker-compose.dev.yml`) — bind-mounts `backend/` and `frontend/` into the containers
   and runs the FastAPI dev server and Vite dev server with hot reload, matching the manual setup
@@ -147,7 +147,7 @@ cp .env.example .env           # optional, defaults already work
 ```bash
 cd backend
 uv sync                        # installs dependencies into .venv
-uv run alembic upgrade head    # create the SQLite database
+uv run alembic upgrade head    # apply migrations (requires Postgres running, e.g. via `./start.sh dev`)
 uv run uvicorn app.main:app --reload
 ```
 
@@ -161,17 +161,6 @@ On first startup, the database is automatically seeded with sample asset types, 
 demo assets/events (see `app/db/seed.py`). Seeding only runs if the `asset_types` table is empty,
 so it's safe to restart the server repeatedly. Set `SEED_ON_STARTUP=false` in the root `.env` to
 disable this (this is the default in the prod Docker Compose setup).
-
-**Backups** (admin-only "Резервные копии" page) run on Celery, so exercising that feature outside
-Docker needs a running Redis instance plus a worker and beat process, in separate terminals:
-
-```bash
-redis-server                                                  # or: docker run --rm -p 6379:6379 redis:7-alpine
-uv run celery -A app.celery_app worker --loglevel=info
-uv run celery -A app.celery_app beat --loglevel=info
-```
-
-`./start.sh dev` (below) already wires all of this up, so this is only needed for the manual setup.
 
 #### Frontend
 
@@ -195,9 +184,24 @@ All endpoints are served under the `/api` prefix.
 | Assets       | `GET/POST /assets`, `GET/PUT/DELETE /assets/{id}` (list supports `search`, `status`, `asset_type_id`, `sort_by`, `sort_dir`, `page`, `page_size`) |
 | Events       | `GET/POST /assets/{id}/events`, `PUT/DELETE /events/{id}` |
 | Dashboard    | `GET /dashboard/summary` |
-| Backups (admin-only) | `GET/PUT /backups/settings`, `GET/POST /backups/recipients`, `PATCH/DELETE /backups/recipients/{id}`, `GET /backups/runs`, `POST /backups/run`, `GET /backups/runs/{id}/download`, `POST /backups/import` |
 
 Full interactive documentation is available at `/docs` while the backend is running.
+
+## Backups
+
+The database is backed up outside the app, via `scripts/backup.sh`, which runs `pg_dump`/`psql`
+against the running Postgres container (works with either `docker-compose.yml` or
+`docker-compose.dev.yml`, found by container name):
+
+```bash
+./scripts/backup.sh                  # create a backup in ./backups (gzip'd SQL dump)
+./scripts/backup.sh list             # list existing backups
+./scripts/backup.sh restore <file>   # restore from a backup file (prompts to confirm)
+```
+
+Backups older than `BACKUP_RETENTION` (default 20, set in the root `.env`) are pruned
+automatically after each run. Backup files are written to `BACKUP_DIR` (default `./backups`,
+git-ignored).
 
 ## Database Migrations
 
@@ -217,6 +221,3 @@ The system was designed to grow without major refactoring:
 - **Attachments, QR codes, auth, roles, notifications, scheduled maintenance**: the clean
   separation between API routes, services, repositories, and schemas keeps room to add these as
   new modules without touching existing ones.
-- **PostgreSQL**: swap the `DATABASE_URL` in the root `.env` (e.g.
-  `postgresql+psycopg://user:pass@host/db`) and install a Postgres driver — SQLAlchemy 2.x and
-  Alembic already abstract over the database engine.

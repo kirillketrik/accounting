@@ -1,4 +1,4 @@
-import { API_BASE_URL, apiClient } from '@/api/client'
+import { apiClient } from '@/api/client'
 import type {
   AppSettings,
   AppSettingsInput,
@@ -27,20 +27,11 @@ import type {
   AuditLog,
   AuditLogDetail,
   AuditLogListParams,
-  BackupRecipient,
-  BackupRecipientInput,
-  BackupRecipientUpdateInput,
-  BackupRun,
-  BackupRunListParams,
-  BackupSettings,
-  BackupSettingsCreateInput,
-  BackupSettingsUpdateInput,
   ChangePasswordInput,
   DashboardSummary,
   EventCounter,
   EventType,
   EventTypeInput,
-  ImportResult,
   LoginInput,
   PaginatedResponse,
   PasswordResetInput,
@@ -176,34 +167,6 @@ export const usersApi = {
   update: (id: number, data: UserUpdateInput) => apiClient.patch<User>(`/users/${id}`, data),
   resetPassword: (id: number, data: PasswordResetInput) =>
     apiClient.post<User>(`/users/${id}/reset-password`, data),
-}
-
-export const backupsApi = {
-  listSettings: () => apiClient.get<BackupSettings[]>('/backups/settings'),
-  createSettings: (data: BackupSettingsCreateInput) =>
-    apiClient.post<BackupSettings>('/backups/settings', data),
-  updateSettings: (id: number, data: BackupSettingsUpdateInput) =>
-    apiClient.patch<BackupSettings>(`/backups/settings/${id}`, data),
-  deleteSettings: (id: number) => apiClient.delete<void>(`/backups/settings/${id}`),
-  listRecipients: (settingsId: number) =>
-    apiClient.get<BackupRecipient[]>(`/backups/settings/${settingsId}/recipients`),
-  createRecipient: (settingsId: number, data: BackupRecipientInput) =>
-    apiClient.post<BackupRecipient>(`/backups/settings/${settingsId}/recipients`, data),
-  updateRecipient: (id: number, data: BackupRecipientUpdateInput) =>
-    apiClient.patch<BackupRecipient>(`/backups/recipients/${id}`, data),
-  deleteRecipient: (id: number) => apiClient.delete<void>(`/backups/recipients/${id}`),
-  listRuns: (params: BackupRunListParams) =>
-    apiClient.get<PaginatedResponse<BackupRun>>(
-      `/backups/runs${buildQuery({ page: params.page, page_size: params.page_size })}`
-    ),
-  runNow: (settingsId: number) => apiClient.post<BackupRun>(`/backups/settings/${settingsId}/run`),
-  downloadUrl: (id: number) => `${API_BASE_URL}/backups/runs/${id}/download`,
-  import: (file: File, backupBeforeImport: boolean) => {
-    const formData = new FormData()
-    formData.set('file', file)
-    formData.set('backup_before_import', String(backupBeforeImport))
-    return apiClient.postForm<ImportResult>('/backups/import', formData)
-  },
 }
 
 export const auditLogsApi = {

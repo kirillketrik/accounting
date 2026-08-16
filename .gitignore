@@ -8,3 +8,6 @@ Thumbs.db
 
 # Environment variables (single root .env, see .env.example)
 .env
+
+# DB dumps written by scripts/backup.sh
+/backups/
