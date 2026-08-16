@@ -9,7 +9,7 @@ New asset types (Printer, Computer, Router, ...) and event types (Maintenance, R
 are created entirely through the UI/API as database-backed lookup rows — never hardcoded, never
 require a code change or redeploy.
 
-**Backend:** FastAPI, SQLAlchemy 2.x, SQLite (Postgres-compatible via `DATABASE_URL`), Alembic,
+**Backend:** FastAPI, SQLAlchemy 2.x, Postgres (via `DATABASE_URL`), Alembic,
 Pydantic v2, Celery + Redis (backups).
 **Frontend:** React 19, React Router v7, TypeScript, Vite, shadcn/ui, Tailwind CSS v4, TanStack
 Query, React Hook Form, Zod.
@@ -22,7 +22,7 @@ There is currently no test suite in the repo (no pytest, no vitest) — don't as
 
 ```bash
 uv sync                                    # install deps into .venv
-uv run alembic upgrade head                # apply migrations / create the SQLite db
+uv run alembic upgrade head                # apply migrations (requires Postgres running, e.g. via `./start.sh dev`)
 uv run uvicorn app.main:app --reload       # dev server at :8000 (docs at /docs)
 uv run alembic revision --autogenerate -m "describe the change"   # new migration after a model change
 ```

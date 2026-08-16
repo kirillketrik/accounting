@@ -1,4 +1,19 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-accounting}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-accounting}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-accounting}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     restart: unless-stopped
@@ -9,14 +24,17 @@ services:
       target: prod
     env_file: .env
     environment:
-      DATABASE_URL: sqlite:////app/data/asset_management.db
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-accounting}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-accounting}
       SEED_ON_STARTUP: "false"
       BACKUPS_DIR: /app/data/backups
       REDIS_URL: redis://redis:6379/0
     volumes:
       - backend_data:/app/data
     depends_on:
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s
@@ -31,13 +49,16 @@ services:
     command: uv run celery -A app.celery_app worker --loglevel=info
     env_file: .env
     environment:
-      DATABASE_URL: sqlite:////app/data/asset_management.db
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-accounting}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-accounting}
       BACKUPS_DIR: /app/data/backups
       REDIS_URL: redis://redis:6379/0
     volumes:
       - backend_data:/app/data
     depends_on:
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
 
   celery-beat:
@@ -47,13 +68,16 @@ services:
     command: uv run celery -A app.celery_app beat --loglevel=info
     env_file: .env
     environment:
-      DATABASE_URL: sqlite:////app/data/asset_management.db
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-accounting}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-accounting}
       BACKUPS_DIR: /app/data/backups
       REDIS_URL: redis://redis:6379/0
     volumes:
       - backend_data:/app/data
     depends_on:
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
 
   frontend:
@@ -72,3 +96,4 @@ services:
 
 volumes:
   backend_data:
+  postgres_data:
