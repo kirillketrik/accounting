@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import Depends, Request
 from sqlalchemy.orm import Session
@@ -21,7 +21,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
         raise UnauthorizedError()
 
     session = db.get(UserSession, hash_token(token))
-    if session is None or session.expires_at < datetime.utcnow():
+    if session is None or session.expires_at < datetime.now(timezone.utc):
         raise UnauthorizedError()
 
     user = db.get(User, session.user_id)

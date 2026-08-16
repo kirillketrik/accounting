@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from sqlalchemy.orm import Session
@@ -186,7 +186,7 @@ class BackupService:
             delivery_details=delivery_details,
         )
         if settings is not None:
-            self.settings_repo.update(settings, last_run_at=datetime.utcnow())
+            self.settings_repo.update(settings, last_run_at=datetime.now(timezone.utc))
         return updated
 
     def run_backup_sync(
@@ -224,7 +224,7 @@ class BackupService:
         for settings in self.settings_repo.list_enabled():
             if not settings.interval_hours:
                 continue
-            due = settings.last_run_at is None or datetime.utcnow() - settings.last_run_at >= timedelta(
+            due = settings.last_run_at is None or datetime.now(timezone.utc) - settings.last_run_at >= timedelta(
                 hours=settings.interval_hours
             )
             if due:

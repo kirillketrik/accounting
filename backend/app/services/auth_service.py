@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
@@ -27,7 +27,7 @@ class AuthService:
             raise UnauthorizedError("Invalid username or password")
 
         token = generate_session_token()
-        expires_at = datetime.utcnow() + timedelta(days=self.settings.session_ttl_days)
+        expires_at = datetime.now(timezone.utc) + timedelta(days=self.settings.session_ttl_days)
         session = UserSession(token_hash=hash_token(token), user_id=user.id, expires_at=expires_at)
         self.db.add(session)
         self.db.commit()
