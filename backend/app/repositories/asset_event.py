@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
@@ -18,6 +20,22 @@ class AssetEventRepository(BaseRepository[AssetEvent]):
             .group_by(EventType.id)
         )
         return list(self.db.execute(stmt).all())
+
+    def count_by_type(self) -> list[tuple[int, str, int]]:
+        stmt = (
+            select(EventType.id, EventType.name, func.count(AssetEvent.id))
+            .select_from(AssetEvent)
+            .join(EventType, AssetEvent.event_type_id == EventType.id)
+            .group_by(EventType.id, EventType.name)
+        )
+        return list(self.db.execute(stmt).all())
+
+    def event_dates_since(self, since: datetime) -> list[datetime]:
+        stmt = select(AssetEvent.event_date).where(AssetEvent.event_date >= since)
+        return list(self.db.scalars(stmt))
+
+    def total_count(self) -> int:
+        return self.db.scalar(select(func.count()).select_from(AssetEvent)) or 0
 
     def list_for_asset(self, asset_id: int) -> list[AssetEvent]:
         stmt = (

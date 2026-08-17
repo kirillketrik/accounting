@@ -203,6 +203,25 @@ export interface AssetsByStatus {
   count: number
 }
 
+export interface AssetsByType {
+  asset_type_id: number
+  asset_type_name: string
+  count: number
+}
+
+export interface EventsByType {
+  event_type_id: number
+  event_type_name: string
+  count: number
+}
+
+export interface MonthlyActivityPoint {
+  month: string
+  new_assets: number
+  events: number
+  disposals: number
+}
+
 export interface LatestEvent {
   id: number
   asset_id: number
@@ -215,7 +234,12 @@ export interface LatestEvent {
 
 export interface DashboardSummary {
   total_assets: number
+  total_events: number
+  total_disposals: number
   assets_by_status: AssetsByStatus[]
+  assets_by_type: AssetsByType[]
+  events_by_type: EventsByType[]
+  monthly_activity: MonthlyActivityPoint[]
   latest_events: LatestEvent[]
 }
 

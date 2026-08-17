@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.orm import Session, joinedload
 
@@ -139,5 +141,18 @@ class AssetRepository(BaseRepository[Asset]):
         )
         return list(self.db.execute(stmt).all())
 
+    def count_by_type(self) -> list[tuple[int, str, int]]:
+        stmt = (
+            select(AssetType.id, AssetType.name, func.count(Asset.id))
+            .select_from(Asset)
+            .join(AssetType, Asset.asset_type_id == AssetType.id)
+            .group_by(AssetType.id, AssetType.name)
+        )
+        return list(self.db.execute(stmt).all())
+
     def total_count(self) -> int:
         return self.db.scalar(select(func.count()).select_from(Asset)) or 0
+
+    def created_dates_since(self, since: datetime) -> list[datetime]:
+        stmt = select(Asset.created_at).where(Asset.created_at >= since)
+        return list(self.db.scalars(stmt))
